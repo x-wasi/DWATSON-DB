@@ -1,0 +1,12 @@
+{
+  "name": "projectx",
+  "private": true,
+  "version": "1.0.0",
+  "workspaces": ["server"],
+  "scripts": {
+    "start": "node server/index.js",
+    "heroku-postbuild": "npm install --prefix server"
+  }
+  ,"engines": { "node": "16.x || 18.x || 20.x" }
+}
+

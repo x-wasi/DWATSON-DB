@@ -1,0 +1,1781 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sales Dashboard - D.Watson Pharmacy</title>
+    
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <style>
+        :root {
+            --primary-color: #2c6e8a;
+            --secondary-color: #4fb3d9;
+            --accent-color: #0a4d68;
+            --light-bg: #f8f9fa;
+            --dark-text: #212529;
+            --success-color: #28a745;
+            --warning-color: #ffc107;
+            --danger-color: #dc3545;
+            --info-color: #17a2b8;
+            --sidebar-width: 250px;
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #b30000;
+            color: var(--dark-text);
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+        
+        /* Top header (compact) */
+        .top-header {
+            background: linear-gradient(135deg, #b30000, #d32f2f);
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            position: fixed;
+            width: 100%;
+            top: 0;
+            z-index: 1000;
+            height: 60px;
+            display: flex;
+            align-items: center;
+            padding: 0 1rem;
+        }
+
+        .brand-compact {
+            font-weight: 700;
+            font-size: 1.1rem;
+            color: white;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .sidebar-toggle {
+            color: white;
+            background: transparent;
+            border: none;
+            font-size: 1.25rem;
+            margin-right: 0.75rem;
+        }
+
+        /* Left Sidebar */
+        .sidebar {
+            position: fixed;
+            left: 0;
+            top: 60px; /* below header */
+            width: var(--sidebar-width);
+            height: calc(100vh - 60px);
+            background: linear-gradient(180deg, rgba(255,255,255,0.02), rgba(0,0,0,0.03));
+            padding: 1rem 0.5rem;
+            border-right: 1px solid rgba(0,0,0,0.05);
+            z-index: 999;
+            overflow-y: auto;
+        }
+
+        .sidebar .nav-link {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            color: white;
+            padding: 0.75rem 1rem;
+            border-radius: 0.5rem;
+            margin: 0.25rem 0.5rem;
+            font-weight: 600;
+            background: transparent;
+            transition: background 0.15s ease;
+        }
+
+        .sidebar .nav-link:hover,
+        .sidebar .nav-link.active {
+            background: rgba(255,255,255,0.06);
+            color: #fff;
+        }
+        
+        /* Main Content */
+        .main-content {
+            margin-top: 60px;
+            margin-left: var(--sidebar-width);
+            padding: 2rem;
+            min-height: calc(100vh - 60px);
+            transition: margin-left 0.2s ease;
+        }
+        
+        /* Dashboard Cards */
+        .dashboard-card {
+            background: white;
+            border-radius: 1rem;
+            padding: 2rem;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+            border: none;
+            transition: all 0.3s ease;
+            height: 100%;
+        }
+        
+        .dashboard-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.15);
+        }
+        
+        .card-icon {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            color: white;
+            margin-bottom: 1rem;
+        }
+        
+        .card-icon.primary { background: linear-gradient(135deg, var(--primary-color), var(--secondary-color)); }
+        .card-icon.success { background: linear-gradient(135deg, var(--success-color), #20c997); }
+        .card-icon.warning { background: linear-gradient(135deg, var(--warning-color), #fd7e14); }
+        .card-icon.info { background: linear-gradient(135deg, var(--info-color), #6f42c1); }
+        
+        .card-title {
+            font-size: 0.9rem;
+            font-weight: 600;
+            color: #6c757d;
+            margin-bottom: 0.5rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        
+        .card-value {
+            font-size: 2rem;
+            font-weight: 700;
+            color: var(--dark-text);
+            margin-bottom: 0.5rem;
+        }
+        
+        .card-change {
+            font-size: 0.85rem;
+            font-weight: 500;
+        }
+        
+        .card-change.positive { color: var(--success-color); }
+        .card-change.negative { color: var(--danger-color); }
+        
+        /* Tables */
+        .table-container {
+            background: white;
+            border-radius: 1rem;
+            padding: 1.5rem;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+            margin-bottom: 2rem;
+        }
+        
+        .table {
+            margin-bottom: 0;
+        }
+        
+        .table th {
+            border-top: none;
+            font-weight: 600;
+            color: var(--dark-text);
+            padding: 1rem 0.75rem;
+            background-color: var(--light-bg);
+        }
+        
+        .table td {
+            padding: 1rem 0.75rem;
+            vertical-align: middle;
+            border-top: 1px solid #e9ecef;
+        }
+        
+        /* Buttons */
+        .btn {
+            border-radius: 0.5rem;
+            font-weight: 500;
+            padding: 0.5rem 1.5rem;
+            transition: all 0.3s ease;
+            border: none;
+        }
+        
+        .btn-primary {
+            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+        }
+        
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(44, 110, 138, 0.3);
+        }
+        
+        .btn-success {
+            background: linear-gradient(135deg, var(--success-color), #20c997);
+        }
+        
+        .btn-warning {
+            background: linear-gradient(135deg, var(--warning-color), #fd7e14);
+        }
+        
+        .btn-danger {
+            background: linear-gradient(135deg, var(--danger-color), #e74c3c);
+        }
+        
+        .btn-info {
+            background: linear-gradient(135deg, var(--info-color), #6f42c1);
+        }
+        
+        /* Modals */
+        .modal-content {
+            border-radius: 1rem;
+            border: none;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+        }
+        
+        .modal-header {
+            border-bottom: 1px solid #e9ecef;
+            padding: 1.5rem;
+        }
+        
+        .modal-body {
+            padding: 1.5rem;
+        }
+        
+        .modal-footer {
+            border-top: 1px solid #e9ecef;
+            padding: 1.5rem;
+        }
+        
+        /* Forms */
+        .form-control, .form-select {
+            border-radius: 0.5rem;
+            border: 2px solid #e9ecef;
+            padding: 0.75rem 1rem;
+            transition: all 0.3s ease;
+        }
+        
+        .form-control:focus, .form-select:focus {
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 0.2rem rgba(44, 110, 138, 0.25);
+        }
+        
+        .form-label {
+            font-weight: 600;
+            color: var(--dark-text);
+            margin-bottom: 0.5rem;
+        }
+        
+        /* Notifications */
+        .notification {
+            position: fixed;
+            top: 100px;
+            right: 20px;
+            z-index: 1050;
+            min-width: 300px;
+            padding: 1rem 1.5rem;
+            border-radius: 0.5rem;
+            color: white;
+            font-weight: 500;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+            transform: translateX(400px);
+            transition: all 0.3s ease;
+        }
+        
+        .notification.show {
+                transform: translateX(0);
+            }
+            
+        .notification.success { background: linear-gradient(135deg, var(--success-color), #20c997); }
+        .notification.error { background: linear-gradient(135deg, var(--danger-color), #e74c3c); }
+        .notification.warning { background: linear-gradient(135deg, var(--warning-color), #fd7e14); }
+        .notification.info { background: linear-gradient(135deg, var(--info-color), #6f42c1); }
+        
+        /* Loading Spinner */
+        .loading-spinner {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            border-top-color: white;
+            animation: spin 1s ease-in-out infinite;
+        }
+        
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        
+        /* Responsive */
+        @media (max-width: 768px) {
+            .main-content {
+                padding: 1rem;
+            }
+            
+            .dashboard-card {
+                padding: 1.5rem;
+            }
+            
+            .card-value {
+                font-size: 1.5rem;
+            }
+            /* Hide the left sidebar on small screens and make top header show brand + toggle */
+            .sidebar {
+                display: none;
+            }
+
+            .main-content {
+                margin-left: 0;
+            }
+
+            .top-header .brand-compact {
+                margin-left: 0;
+            }
+        }
+        
+        /* Hidden sections */
+        .section {
+            display: none;
+        }
+        
+        .section.active {
+            display: block;
+        }
+    </style>
+</head>
+<body>
+    <!-- Top header -->
+    <header class="top-header">
+        <button class="sidebar-toggle" id="sidebarToggle" aria-label="Toggle sidebar">☰</button>
+        <div class="brand-compact">
+            <i class="fas fa-pills"></i>
+            <span>D.Watson Pharmacy</span>
+        </div>
+    </header>
+
+    <!-- Left Sidebar (vertical tabs) -->
+    <aside class="sidebar" id="leftSidebar">
+        <nav class="nav flex-column px-2">
+            <a class="nav-link active" href="#" data-section="dashboard">
+                <i class="fas fa-tachometer-alt"></i> Dashboard
+            </a>
+            <a class="nav-link" href="#" data-section="categories">
+                <i class="fas fa-tags"></i> Categories
+            </a>
+            <a class="nav-link" href="#" data-section="sales">
+                <i class="fas fa-shopping-cart"></i> Sales Entry
+            </a>
+            <a class="nav-link" href="#" data-section="branches">
+                <i class="fas fa-building"></i> Branches
+            </a>
+            <a class="nav-link" href="#" data-section="settings">
+                <i class="fas fa-cog"></i> Settings
+            </a>
+        </nav>
+    </aside>
+    
+    <!-- Main Content -->
+    <div class="main-content">
+        <!-- Dashboard Section -->
+        <div id="dashboard" class="section active">
+            <div class="row mb-4">
+                <div class="col-12">
+                    <h1 class="text-white mb-4">
+                        <i class="fas fa-tachometer-alt me-2"></i>
+                        Dashboard Overview
+                    </h1>
+                </div>
+            </div>
+            
+            <!-- Dashboard Cards -->
+            <div class="row mb-4">
+                <div class="col-lg-3 col-md-6 mb-4">
+                    <div class="dashboard-card">
+                        <div class="card-icon primary">
+                            <i class="fas fa-shopping-cart"></i>
+                </div>
+                        <div class="card-title">Total Sales</div>
+                        <div class="card-value" id="totalSales">0</div>
+                        <div class="card-change positive" id="salesChange">+0%</div>
+                </div>
+            </div>
+                <div class="col-lg-3 col-md-6 mb-4">
+                    <div class="dashboard-card">
+                        <div class="card-icon success">
+                            <i class="fas fa-chart-line"></i>
+                        </div>
+                        <div class="card-title">Total Profit</div>
+                        <div class="card-value" id="totalProfit">0</div>
+                        <div class="card-change positive" id="profitChange">+0%</div>
+                        </div>
+                        </div>
+                <div class="col-lg-3 col-md-6 mb-4">
+                    <div class="dashboard-card">
+                        <div class="card-icon warning">
+                            <i class="fas fa-building"></i>
+                    </div>
+                        <div class="card-title">Active Branches</div>
+                        <div class="card-value" id="totalBranches">0</div>
+                        <div class="card-change" id="branchesChange">0</div>
+                </div>
+                        </div>
+                <div class="col-lg-3 col-md-6 mb-4">
+                    <div class="dashboard-card">
+                        <div class="card-icon info">
+                            <i class="fas fa-tags"></i>
+                    </div>
+                        <div class="card-title">Categories</div>
+                        <div class="card-value" id="totalCategories">0</div>
+                        <div class="card-change" id="categoriesChange">0</div>
+                </div>
+            </div>
+        </div>
+        
+            <!-- Recent Sales Table -->
+            <div class="table-container">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h5 class="mb-0">Recent Sales</h5>
+                    <button class="btn btn-primary" onclick="showSection('sales')">
+                        <i class="fas fa-plus me-1"></i>Add Sale
+                </button>
+            </div>
+                            <div class="table-responsive">
+                    <table class="table">
+                                    <thead>
+                                        <tr>
+                                            <th>Date</th>
+                                            <th>Branch</th>
+                                <th>Items</th>
+                                <th>Total</th>
+                                <th>Profit</th>
+                                <th>Category</th>
+                                            <th>Actions</th>
+                                        </tr>
+                                    </thead>
+                        <tbody id="recentSalesTable">
+                            <tr>
+                                <td colspan="7" class="text-center text-muted">
+                                    <div class="loading-spinner me-2"></div>
+                                    Loading sales data...
+                                </td>
+                            </tr>
+                                    </tbody>
+                                </table>
+                    </div>
+                </div>
+            </div>
+            
+        <!-- Categories Section -->
+        <div id="categories" class="section">
+            <div class="row mb-4">
+                            <div class="col-12">
+                    <h1 class="text-white mb-4">
+                        <i class="fas fa-tags me-2"></i>
+                        Categories Management
+                    </h1>
+                            </div>
+                        </div>
+                        
+            <div class="table-container">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h5 class="mb-0">Categories</h5>
+                    <button class="btn btn-success" onclick="openCategoryModal()">
+                        <i class="fas fa-plus me-1"></i>Add Category
+                        </button>
+                    </div>
+                    <div class="table-responsive">
+                    <table class="table">
+                            <thead>
+                                <tr>
+                                <th>Name</th>
+                                <th>Description</th>
+                                <th>Color</th>
+                                <th>Created</th>
+                                <th>Actions</th>
+                                </tr>
+                            </thead>
+                        <tbody id="categoriesTable">
+                            <tr>
+                                <td colspan="5" class="text-center text-muted">
+                                    <div class="loading-spinner me-2"></div>
+                                    Loading categories...
+                                </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                </div>
+            </div>
+                    </div>
+                    
+        <!-- Sales Entry Section -->
+        <div id="sales" class="section">
+            <div class="row mb-4">
+                <div class="col-12">
+                    <h1 class="text-white mb-4">
+                        <i class="fas fa-shopping-cart me-2"></i>
+                        Sales Entry
+                    </h1>
+                </div>
+            </div>
+            
+            <div class="table-container">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h5 class="mb-0">Sales Records</h5>
+                    <button class="btn btn-success" onclick="openSaleModal()">
+                        <i class="fas fa-plus me-1"></i>Add Sale
+                    </button>
+                </div>
+                    <div class="table-responsive">
+                    <table class="table">
+                            <thead>
+                                <tr>
+                                    <th>Date</th>
+                                    <th>Branch</th>
+                                <th>Items</th>
+                                <th>Total</th>
+                                <th>Cost</th>
+                                <th>Profit</th>
+                                    <th>Category</th>
+                                <th>Actions</th>
+                                </tr>
+                            </thead>
+                        <tbody id="salesTable">
+                            <tr>
+                                <td colspan="8" class="text-center text-muted">
+                                    <div class="loading-spinner me-2"></div>
+                                    Loading sales data...
+                                </td>
+                            </tr>
+                            </tbody>
+                        </table>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Branches Section -->
+        <div id="branches" class="section">
+            <div class="row mb-4">
+                <div class="col-12">
+                    <h1 class="text-white mb-4">
+                        <i class="fas fa-building me-2"></i>
+                        Branches Management
+                    </h1>
+                </div>
+            </div>
+            
+            <div class="table-container">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h5 class="mb-0">Branches</h5>
+                    <div>
+                        <button class="btn btn-info me-2" onclick="loadBranches()">
+                            <i class="fas fa-refresh me-1"></i>Refresh
+                        </button>
+                        <button class="btn btn-success" onclick="openBranchModal()">
+                            <i class="fas fa-plus me-1"></i>Add Branch
+                        </button>
+                    </div>
+                </div>
+                <div class="table-responsive">
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>Name</th>
+                                <th>Address</th>
+                                <th>Phone</th>
+                                <th>Email</th>
+                                <th>Created</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="branchesTable">
+                            <tr>
+                                <td colspan="6" class="text-center text-muted">
+                                    <div class="loading-spinner me-2"></div>
+                                    Loading branches...
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Settings Section -->
+        <div id="settings" class="section">
+            <div class="row mb-4">
+                <div class="col-12">
+                    <h1 class="text-white mb-4">
+                        <i class="fas fa-cog me-2"></i>
+                        Settings
+                    </h1>
+                </div>
+            </div>
+            
+            <div class="table-container">
+                <h5 class="mb-3">Application Settings</h5>
+                    <form id="settingsForm">
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                                <label for="companyName" class="form-label">Company Name</label>
+                            <input type="text" class="form-control" id="companyName" name="companyName">
+                            </div>
+                        <div class="col-md-6 mb-3">
+                                <label for="currency" class="form-label">Currency</label>
+                            <select class="form-select" id="currency" name="currency">
+                                <option value="PKR">PKR</option>
+                                <option value="USD">USD</option>
+                                <option value="EUR">EUR</option>
+                                </select>
+                            </div>
+                        <div class="col-md-6 mb-3">
+                                <label for="dateFormat" class="form-label">Date Format</label>
+                            <select class="form-select" id="dateFormat" name="dateFormat">
+                                <option value="DD/MM/YYYY">DD/MM/YYYY</option>
+                                    <option value="MM/DD/YYYY">MM/DD/YYYY</option>
+                                    <option value="YYYY-MM-DD">YYYY-MM-DD</option>
+                                </select>
+                            </div>
+                        <div class="col-md-6 mb-3">
+                                <label for="itemsPerPage" class="form-label">Items Per Page</label>
+                            <input type="number" class="form-control" id="itemsPerPage" name="itemsPerPage" min="5" max="100">
+                            </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="defaultCostPercent" class="form-label">Default Cost Percentage</label>
+                            <input type="number" class="form-control" id="defaultCostPercent" name="defaultCostPercent" min="0" max="100">
+                        </div>
+                        </div>
+                    <div class="d-flex gap-2">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-save me-1"></i>Save Settings
+                            </button>
+                        <button type="button" class="btn btn-secondary" onclick="loadSettings()">
+                            <i class="fas fa-refresh me-1"></i>Reload
+                            </button>
+                        </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Category Modal -->
+    <div class="modal fade" id="categoryModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="categoryModalTitle">Add Category</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="categoryForm">
+                        <input type="hidden" id="categoryId">
+                        <div class="mb-3">
+                            <label for="categoryName" class="form-label">Category Name</label>
+                            <input type="text" class="form-control" id="categoryName" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="categoryDescription" class="form-label">Description</label>
+                            <textarea class="form-control" id="categoryDescription" rows="3"></textarea>
+                        </div>
+                        <div class="mb-3">
+                            <label for="categoryColor" class="form-label">Color</label>
+                            <select class="form-select" id="categoryColor">
+                                <option value="primary">Primary</option>
+                                <option value="success">Success</option>
+                                <option value="warning">Warning</option>
+                                <option value="info">Info</option>
+                                <option value="danger">Danger</option>
+                            </select>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-primary" onclick="saveCategory()">
+                        <span id="categorySaveText">Save Category</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Sale Modal -->
+    <div class="modal fade" id="saleModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="saleModalTitle">Add Sale</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="saleForm">
+                        <input type="hidden" id="saleId">
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="saleDate" class="form-label">Date</label>
+                                <input type="date" class="form-control" id="saleDate" required>
+                        </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="saleBranch" class="form-label">Branch</label>
+                                <select class="form-select" id="saleBranch" required>
+                                    <option value="">Select Branch</option>
+                                </select>
+                        </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="saleCategory" class="form-label">Category</label>
+                                <select class="form-select" id="saleCategory">
+                                    <option value="">Select Category</option>
+                                </select>
+                        </div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label class="form-label">Sale Items</label>
+                            <div id="saleItems">
+                                <div class="sale-item row mb-2">
+                                    <div class="col-md-3">
+                                        <input type="text" class="form-control" placeholder="SKU" name="sku">
+                                    </div>
+                                    <div class="col-md-3">
+                                        <input type="text" class="form-control" placeholder="Item Name" name="name" required>
+                                    </div>
+                                    <div class="col-md-2">
+                                        <input type="number" class="form-control" placeholder="Qty" name="quantity" min="1" required>
+                                    </div>
+                                    <div class="col-md-2">
+                                        <input type="number" class="form-control" placeholder="Unit Price" name="unitPrice" min="0" step="0.01" required>
+                                    </div>
+                                    <div class="col-md-2">
+                                        <input type="number" class="form-control" placeholder="Cost" name="cost" min="0" step="0.01" required>
+                                    </div>
+                                </div>
+                            </div>
+                            <button type="button" class="btn btn-sm btn-outline-primary" onclick="addSaleItem()">
+                                <i class="fas fa-plus me-1"></i>Add Item
+                            </button>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-4">
+                                <div class="card bg-light">
+                                    <div class="card-body text-center">
+                                        <h6 class="card-title">Total Sales</h6>
+                                        <h4 class="text-primary" id="saleTotal">0</h4>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="card bg-light">
+                                    <div class="card-body text-center">
+                                        <h6 class="card-title">Total Cost</h6>
+                                        <h4 class="text-warning" id="saleCost">0</h4>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="card bg-light">
+                                    <div class="card-body text-center">
+                                        <h6 class="card-title">Profit</h6>
+                                        <h4 class="text-success" id="saleProfit">0</h4>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-primary" onclick="saveSale()">
+                        <span id="saleSaveText">Save Sale</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Branch Modal -->
+    <div class="modal fade" id="branchModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="branchModalTitle">Add Branch</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="branchForm">
+                        <input type="hidden" id="branchId">
+                        <div class="mb-3">
+                            <label for="branchName" class="form-label">Branch Name</label>
+                            <input type="text" class="form-control" id="branchName" required>
+                            </div>
+                        <div class="mb-3">
+                            <label for="branchAddress" class="form-label">Address</label>
+                            <textarea class="form-control" id="branchAddress" rows="3"></textarea>
+                        </div>
+                        <div class="mb-3">
+                            <label for="branchPhone" class="form-label">Phone</label>
+                            <input type="tel" class="form-control" id="branchPhone">
+                        </div>
+                        <div class="mb-3">
+                            <label for="branchEmail" class="form-label">Email</label>
+                            <input type="email" class="form-control" id="branchEmail">
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-primary" onclick="saveBranch()">
+                        <span id="branchSaveText">Save Branch</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <script>
+        // API Service Layer
+        class APIService {
+            constructor() {
+                this.baseURL = '/api';
+            }
+            
+            async request(endpoint, options = {}) {
+                // Add cache-busting parameter to prevent 304 responses
+                const separator = endpoint.includes('?') ? '&' : '?';
+                const url = `${this.baseURL}${endpoint}${separator}_t=${Date.now()}`;
+                
+                const config = {
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Cache-Control': 'no-cache',
+                        'Pragma': 'no-cache',
+                        ...options.headers
+                    },
+                    ...options
+                };
+                
+                try {
+                    console.log(`🌐 Making API request to: ${url}`);
+                    const response = await fetch(url, config);
+                    
+                    console.log(`📡 API Response: ${response.status} ${response.statusText}`);
+                    
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! status: ${response.status}`);
+                    }
+                    
+                    const data = await response.json();
+                    console.log(`✅ API Data received:`, data);
+                    return data;
+                } catch (error) {
+                    console.error(`❌ API request failed for ${endpoint}:`, error);
+                    throw error;
+                }
+            }
+            
+            // Health
+            async getHealth() {
+                return this.request('/health');
+            }
+            
+            // Settings
+            async getSettings() {
+                return this.request('/settings');
+            }
+            
+            async updateSettings(settings) {
+                return this.request('/settings', {
+                    method: 'PUT',
+                    body: JSON.stringify(settings)
+                });
+            }
+            
+            // Branches
+            async getBranches() {
+                return this.request('/branches');
+            }
+            
+            async createBranch(branch) {
+                return this.request('/branches', {
+                    method: 'POST',
+                    body: JSON.stringify(branch)
+                });
+            }
+            
+            async updateBranch(id, branch) {
+                return this.request(`/branches/${id}`, {
+                    method: 'PUT',
+                    body: JSON.stringify(branch)
+                });
+            }
+            
+            async deleteBranch(id) {
+                return this.request(`/branches/${id}`, {
+                    method: 'DELETE'
+                });
+            }
+            
+            // Categories
+            async getCategories() {
+                return this.request('/categories');
+            }
+            
+            async createCategory(category) {
+                return this.request('/categories', {
+                    method: 'POST',
+                    body: JSON.stringify(category)
+                });
+            }
+            
+            async updateCategory(id, category) {
+                return this.request(`/categories/${id}`, {
+                    method: 'PUT',
+                    body: JSON.stringify(category)
+                });
+            }
+            
+            async deleteCategory(id) {
+                return this.request(`/categories/${id}`, {
+                    method: 'DELETE'
+                });
+            }
+            
+            // Sales
+            async getSales(filters = {}) {
+                const queryParams = new URLSearchParams(filters);
+                return this.request(`/sales?${queryParams}`);
+            }
+            
+            async createSale(sale) {
+                return this.request('/sales', {
+                    method: 'POST',
+                    body: JSON.stringify(sale)
+                });
+            }
+            
+            async updateSale(id, sale) {
+                return this.request(`/sales/${id}`, {
+                    method: 'PUT',
+                    body: JSON.stringify(sale)
+                });
+            }
+
+            async deleteSale(id) {
+                return this.request(`/sales/${id}`, {
+                    method: 'DELETE'
+                });
+            }
+        }
+        
+        // Global API instance
+        const api = new APIService();
+        
+        // Global data storage (NO localStorage)
+        let appData = {
+            sales: [],
+            branches: [],
+            categories: [],
+            settings: {
+                companyName: 'D.Watson Group of Pharmacy',
+                currency: 'PKR',
+                dateFormat: 'DD/MM/YYYY',
+                itemsPerPage: 10,
+                defaultCostPercent: 70
+            }
+        };
+        
+        // Utility functions
+        function showNotification(message, type = 'info') {
+            const notification = document.createElement('div');
+            notification.className = `notification ${type}`;
+            notification.textContent = message;
+            document.body.appendChild(notification);
+            
+            setTimeout(() => notification.classList.add('show'), 100);
+            setTimeout(() => {
+                notification.classList.remove('show');
+                setTimeout(() => document.body.removeChild(notification), 300);
+            }, 3000);
+        }
+        
+        function formatCurrency(amount, currency = 'PKR') {
+            return new Intl.NumberFormat('en-PK', {
+                style: 'currency',
+                currency: currency,
+                minimumFractionDigits: 0
+            }).format(amount);
+        }
+        
+        function formatDate(date) {
+            return new Date(date).toLocaleDateString('en-GB');
+        }
+        
+        function showSection(sectionName, event = null) {
+            console.log(`🔄 Switching to section: ${sectionName}`);
+
+            // Hide all sections
+            document.querySelectorAll('.section').forEach(section => {
+                section.classList.remove('active');
+            });
+
+            // Show selected section
+            const targetSection = document.getElementById(sectionName);
+            if (targetSection) targetSection.classList.add('active');
+
+            // Update navigation (sidebar or any nav-link)
+            document.querySelectorAll('.nav-link').forEach(link => {
+                link.classList.remove('active');
+            });
+
+            if (event && event.currentTarget) {
+                event.currentTarget.classList.add('active');
+            } else {
+                // Try to find a nav-link with matching data-section or onclick
+                const fallback = document.querySelector(`.nav-link[data-section="${sectionName}"]`);
+                if (fallback) fallback.classList.add('active');
+            }
+
+            // Load section data
+            loadSectionData(sectionName);
+        }
+        
+        async function loadSectionData(sectionName) {
+            console.log(`🔄 Loading data for section: ${sectionName}`);
+            try {
+                switch (sectionName) {
+                    case 'dashboard':
+                        console.log('📊 Loading dashboard data...');
+                        await loadDashboardData();
+                        break;
+                    case 'categories':
+                        console.log('🏷️ Loading categories data...');
+                        await loadCategories();
+                        break;
+                    case 'sales':
+                        console.log('💰 Loading sales data...');
+                        await loadSales();
+                        break;
+                    case 'branches':
+                        console.log('🏢 Loading branches data...');
+                        await loadBranches();
+                        break;
+                    case 'settings':
+                        console.log('⚙️ Loading settings data...');
+                        await loadSettings();
+                        break;
+                    default:
+                        console.log(`⚠️ Unknown section: ${sectionName}`);
+                }
+            } catch (error) {
+                console.error(`❌ Error loading ${sectionName} data:`, error);
+                showNotification(`Failed to load ${sectionName} data`, 'error');
+            }
+        }
+        
+        // Dashboard functions
+        async function loadDashboardData() {
+            try {
+                // Load all data in parallel
+                const [sales, branches, categories] = await Promise.all([
+                    api.getSales(),
+                    api.getBranches(),
+                    api.getCategories()
+                ]);
+                
+                appData.sales = sales;
+                appData.branches = branches;
+                appData.categories = categories;
+                
+                updateDashboardCards();
+                updateRecentSalesTable();
+            } catch (error) {
+                console.error('Error loading dashboard data:', error);
+                showNotification('Failed to load dashboard data', 'error');
+            }
+        }
+        
+        function updateDashboardCards() {
+            const sales = appData.sales;
+            const branches = appData.branches;
+            const categories = appData.categories;
+            
+            // Calculate totals
+            const totalSales = sales.reduce((sum, sale) => sum + (sale.total || 0), 0);
+            const totalProfit = sales.reduce((sum, sale) => sum + (sale.profit || 0), 0);
+            
+            // Update cards
+            document.getElementById('totalSales').textContent = formatCurrency(totalSales);
+            document.getElementById('totalProfit').textContent = formatCurrency(totalProfit);
+            document.getElementById('totalBranches').textContent = branches.length;
+            document.getElementById('totalCategories').textContent = categories.length;
+        }
+        
+        function updateRecentSalesTable() {
+            const tbody = document.getElementById('recentSalesTable');
+            const recentSales = appData.sales.slice(0, 10);
+            
+            if (recentSales.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="7" class="text-center text-muted">No sales data available</td></tr>';
+                return;
+            }
+            
+            tbody.innerHTML = recentSales.map(sale => `
+                <tr>
+                    <td>${formatDate(sale.date)}</td>
+                    <td>${sale.branchId?.name || 'Unknown Branch'}</td>
+                    <td>${sale.items?.length || 0} items</td>
+                    <td>${formatCurrency(sale.total || 0)}</td>
+                    <td>${formatCurrency(sale.profit || 0)}</td>
+                    <td>${sale.category || 'N/A'}</td>
+                    <td>
+                        <button class="btn btn-sm btn-danger" onclick="deleteSale('${sale._id}')">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                            </td>
+                        </tr>
+            `).join('');
+        }
+        
+        // Categories functions
+        async function loadCategories() {
+            try {
+                const categories = await api.getCategories();
+                appData.categories = categories;
+                updateCategoriesTable();
+            } catch (error) {
+                console.error('Error loading categories:', error);
+                showNotification('Failed to load categories', 'error');
+            }
+        }
+        
+        function updateCategoriesTable() {
+            const tbody = document.getElementById('categoriesTable');
+            
+            if (appData.categories.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="5" class="text-center text-muted">No categories available</td></tr>';
+                return;
+            }
+            
+            tbody.innerHTML = appData.categories.map(category => `
+                <tr>
+                    <td>${category.name}</td>
+                    <td>${category.description || 'N/A'}</td>
+                    <td><span class="badge bg-${category.color || 'primary'}">${category.color || 'primary'}</span></td>
+                    <td>${formatDate(category.createdAt)}</td>
+                    <td>
+                        <button class="btn btn-sm btn-warning me-1" onclick="editCategory('${category._id}')">
+                                <i class="fas fa-edit"></i>
+                            </button>
+                        <button class="btn btn-sm btn-danger" onclick="deleteCategory('${category._id}')">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                    </td>
+                </tr>
+            `).join('');
+        }
+        
+        function openCategoryModal(categoryId = null) {
+            const modal = new bootstrap.Modal(document.getElementById('categoryModal'));
+            const title = document.getElementById('categoryModalTitle');
+            const form = document.getElementById('categoryForm');
+            
+            form.reset();
+            document.getElementById('categoryId').value = '';
+            
+            if (categoryId) {
+                const category = appData.categories.find(c => c._id === categoryId);
+                if (category) {
+                    title.textContent = 'Edit Category';
+                    document.getElementById('categoryId').value = category._id;
+                    document.getElementById('categoryName').value = category.name;
+                    document.getElementById('categoryDescription').value = category.description || '';
+                    document.getElementById('categoryColor').value = category.color || 'primary';
+                }
+            } else {
+                title.textContent = 'Add Category';
+            }
+            
+            modal.show();
+        }
+        
+        async function saveCategory() {
+            const form = document.getElementById('categoryForm');
+            const formData = new FormData(form);
+            const categoryId = document.getElementById('categoryId').value;
+            
+            const categoryData = {
+                name: document.getElementById('categoryName').value,
+                description: document.getElementById('categoryDescription').value,
+                color: document.getElementById('categoryColor').value
+            };
+            
+            if (!categoryData.name.trim()) {
+                showNotification('Category name is required', 'error');
+                return;
+            }
+            
+            const saveBtn = document.getElementById('categorySaveText');
+            const originalText = saveBtn.textContent;
+            saveBtn.innerHTML = '<div class="loading-spinner me-2"></div>Saving...';
+            
+            try {
+                let savedCategory;
+                if (categoryId) {
+                    savedCategory = await api.updateCategory(categoryId, categoryData);
+                    const index = appData.categories.findIndex(c => c._id === categoryId);
+                    if (index !== -1) {
+                        appData.categories[index] = savedCategory;
+                    }
+                } else {
+                    savedCategory = await api.createCategory(categoryData);
+                    appData.categories.push(savedCategory);
+                }
+                
+                updateCategoriesTable();
+                bootstrap.Modal.getInstance(document.getElementById('categoryModal')).hide();
+                showNotification('Category saved successfully!', 'success');
+            } catch (error) {
+                console.error('Error saving category:', error);
+                showNotification('Failed to save category', 'error');
+            } finally {
+                saveBtn.textContent = originalText;
+            }
+        }
+        
+        async function editCategory(categoryId) {
+            openCategoryModal(categoryId);
+        }
+        
+        async function deleteCategory(categoryId) {
+            if (!confirm('Are you sure you want to delete this category?')) {
+                return;
+            }
+            
+            try {
+                await api.deleteCategory(categoryId);
+                appData.categories = appData.categories.filter(c => c._id !== categoryId);
+                updateCategoriesTable();
+                showNotification('Category deleted successfully!', 'success');
+            } catch (error) {
+                console.error('Error deleting category:', error);
+                showNotification('Failed to delete category', 'error');
+            }
+        }
+        
+        // Sales functions
+        async function loadSales() {
+            try {
+                const sales = await api.getSales();
+                appData.sales = sales;
+                updateSalesTable();
+            } catch (error) {
+                console.error('Error loading sales:', error);
+                showNotification('Failed to load sales', 'error');
+            }
+        }
+        
+        function updateSalesTable() {
+            const tbody = document.getElementById('salesTable');
+            
+            if (appData.sales.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="8" class="text-center text-muted">No sales data available</td></tr>';
+                return;
+            }
+            
+            tbody.innerHTML = appData.sales.map(sale => `
+                <tr>
+                    <td>${formatDate(sale.date)}</td>
+                    <td>${sale.branchId?.name || 'Unknown Branch'}</td>
+                    <td>${sale.items?.length || 0} items</td>
+                    <td>${formatCurrency(sale.total || 0)}</td>
+                    <td>${formatCurrency(sale.costTotal || 0)}</td>
+                    <td>${formatCurrency(sale.profit || 0)}</td>
+                    <td>${sale.category || 'N/A'}</td>
+                    <td>
+                        <button class="btn btn-sm btn-danger" onclick="deleteSale('${sale._id}')">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </td>
+                </tr>
+            `).join('');
+        }
+        
+        function openSaleModal(saleId = null) {
+            const modal = new bootstrap.Modal(document.getElementById('saleModal'));
+            const title = document.getElementById('saleModalTitle');
+            const form = document.getElementById('saleForm');
+            
+            form.reset();
+            document.getElementById('saleId').value = '';
+            document.getElementById('saleDate').value = new Date().toISOString().split('T')[0];
+            
+            // Reset sale items
+            const saleItems = document.getElementById('saleItems');
+            saleItems.innerHTML = `
+                <div class="sale-item row mb-2">
+                    <div class="col-md-3">
+                        <input type="text" class="form-control" placeholder="SKU" name="sku">
+                                </div>
+                    <div class="col-md-3">
+                        <input type="text" class="form-control" placeholder="Item Name" name="name" required>
+                            </div>
+                    <div class="col-md-2">
+                        <input type="number" class="form-control" placeholder="Qty" name="quantity" min="1" required>
+                            </div>
+                    <div class="col-md-2">
+                        <input type="number" class="form-control" placeholder="Unit Price" name="unitPrice" min="0" step="0.01" required>
+                    </div>
+                    <div class="col-md-2">
+                        <input type="number" class="form-control" placeholder="Cost" name="cost" min="0" step="0.01" required>
+                        </div>
+                    </div>
+                `;
+            
+            // Load branches and categories
+            loadBranchesForSale();
+            loadCategoriesForSale();
+            
+            if (saleId) {
+                title.textContent = 'Edit Sale';
+                // TODO: Load sale data for editing
+            } else {
+                title.textContent = 'Add Sale';
+            }
+            
+                modal.show();
+        }
+        
+        async function loadBranchesForSale() {
+            try {
+                const branches = await api.getBranches();
+                const select = document.getElementById('saleBranch');
+                select.innerHTML = '<option value="">Select Branch</option>' +
+                    branches.map(branch => `<option value="${branch._id}">${branch.name}</option>`).join('');
+            } catch (error) {
+                console.error('Error loading branches for sale:', error);
+            }
+        }
+        
+        async function loadCategoriesForSale() {
+            try {
+                const categories = await api.getCategories();
+                const select = document.getElementById('saleCategory');
+                select.innerHTML = '<option value="">Select Category</option>' +
+                    categories.map(category => `<option value="${category.name}">${category.name}</option>`).join('');
+            } catch (error) {
+                console.error('Error loading categories for sale:', error);
+            }
+        }
+        
+        function addSaleItem() {
+            const saleItems = document.getElementById('saleItems');
+            const newItem = document.createElement('div');
+            newItem.className = 'sale-item row mb-2';
+            newItem.innerHTML = `
+                <div class="col-md-3">
+                    <input type="text" class="form-control" placeholder="SKU" name="sku">
+                </div>
+                <div class="col-md-3">
+                    <input type="text" class="form-control" placeholder="Item Name" name="name" required>
+                        </div>
+                <div class="col-md-2">
+                    <input type="number" class="form-control" placeholder="Qty" name="quantity" min="1" required>
+                    </div>
+                <div class="col-md-2">
+                    <input type="number" class="form-control" placeholder="Unit Price" name="unitPrice" min="0" step="0.01" required>
+                </div>
+                <div class="col-md-2">
+                    <input type="number" class="form-control" placeholder="Cost" name="cost" min="0" step="0.01" required>
+                </div>
+            `;
+            saleItems.appendChild(newItem);
+        }
+        
+        function calculateSaleTotals() {
+            const items = document.querySelectorAll('.sale-item');
+            let total = 0;
+            let costTotal = 0;
+            
+            items.forEach(item => {
+                const quantity = parseFloat(item.querySelector('[name="quantity"]').value) || 0;
+                const unitPrice = parseFloat(item.querySelector('[name="unitPrice"]').value) || 0;
+                const cost = parseFloat(item.querySelector('[name="cost"]').value) || 0;
+                
+                total += quantity * unitPrice;
+                costTotal += quantity * cost;
+            });
+            
+            const profit = total - costTotal;
+            
+            document.getElementById('saleTotal').textContent = formatCurrency(total);
+            document.getElementById('saleCost').textContent = formatCurrency(costTotal);
+            document.getElementById('saleProfit').textContent = formatCurrency(profit);
+        }
+        
+        async function saveSale() {
+            const form = document.getElementById('saleForm');
+            const saleId = document.getElementById('saleId').value;
+            
+            // Collect form data
+            const date = document.getElementById('saleDate').value;
+            const branchId = document.getElementById('saleBranch').value;
+            const category = document.getElementById('saleCategory').value;
+            
+            if (!date || !branchId) {
+                showNotification('Date and Branch are required', 'error');
+                return;
+            }
+            
+            // Collect items
+            const items = [];
+            const itemElements = document.querySelectorAll('.sale-item');
+            
+            for (const item of itemElements) {
+                const name = item.querySelector('[name="name"]').value;
+                const quantity = parseFloat(item.querySelector('[name="quantity"]').value);
+                const unitPrice = parseFloat(item.querySelector('[name="unitPrice"]').value);
+                const cost = parseFloat(item.querySelector('[name="cost"]').value);
+                const sku = item.querySelector('[name="sku"]').value;
+                
+                if (name && quantity && unitPrice && cost) {
+                    items.push({
+                        sku: sku || '',
+                        name: name,
+                        quantity: quantity,
+                        unitPrice: unitPrice,
+                        cost: cost
+                    });
+                }
+            }
+            
+            if (items.length === 0) {
+                showNotification('At least one item is required', 'error');
+                return;
+            }
+            
+            // Calculate totals
+            const total = items.reduce((sum, item) => sum + (item.quantity * item.unitPrice), 0);
+            const costTotal = items.reduce((sum, item) => sum + (item.quantity * item.cost), 0);
+            const profit = total - costTotal;
+            
+            const saleData = {
+                branchId: branchId,
+                date: new Date(date),
+                items: items,
+                total: total,
+                costTotal: costTotal,
+                profit: profit,
+                category: category || ''
+            };
+            
+            const saveBtn = document.getElementById('saleSaveText');
+            const originalText = saveBtn.textContent;
+            saveBtn.innerHTML = '<div class="loading-spinner me-2"></div>Saving...';
+            
+            try {
+                let savedSale;
+                if (saleId) {
+                    // Update existing sale
+                    savedSale = await api.updateSale(saleId, saleData);
+                    const idx = appData.sales.findIndex(s => s._id === saleId);
+                    if (idx !== -1) appData.sales[idx] = savedSale;
+                } else {
+                    // Create new sale
+                    savedSale = await api.createSale(saleData);
+                    appData.sales.unshift(savedSale);
+                }
+                
+                updateSalesTable();
+                if (document.getElementById('dashboard').classList.contains('active')) {
+                    updateDashboardCards();
+                    updateRecentSalesTable();
+                }
+                
+                bootstrap.Modal.getInstance(document.getElementById('saleModal')).hide();
+                showNotification('Sale saved successfully!', 'success');
+                } catch (error) {
+                console.error('Error saving sale:', error);
+                showNotification('Failed to save sale', 'error');
+            } finally {
+                saveBtn.textContent = originalText;
+            }
+        }
+        
+        async function deleteSale(saleId) {
+            if (!confirm('Are you sure you want to delete this sale?')) {
+                return;
+            }
+            
+            try {
+                // Call API to delete sale
+                await api.deleteSale(saleId);
+                appData.sales = appData.sales.filter(s => s._id !== saleId);
+                updateSalesTable();
+                if (document.getElementById('dashboard').classList.contains('active')) {
+                    updateDashboardCards();
+                    updateRecentSalesTable();
+                }
+                showNotification('Sale deleted successfully!', 'success');
+			} catch (error) {
+                console.error('Error deleting sale:', error);
+                showNotification('Failed to delete sale', 'error');
+            }
+        }
+        
+        // Branches functions
+        async function loadBranches() {
+            try {
+                console.log('🔄 Loading branches from API...');
+                const branches = await api.getBranches();
+                console.log('✅ Branches loaded from API:', branches);
+                appData.branches = branches;
+                updateBranchesTable();
+            } catch (error) {
+                console.error('❌ Error loading branches:', error);
+                showNotification('Failed to load branches', 'error');
+            }
+        }
+        
+        function updateBranchesTable() {
+            console.log('🔄 Updating branches table...');
+            const tbody = document.getElementById('branchesTable');
+            console.log('📊 Branches data:', appData.branches);
+            
+            if (appData.branches.length === 0) {
+                console.log('⚠️ No branches found, showing empty message');
+                tbody.innerHTML = '<tr><td colspan="6" class="text-center text-muted">No branches available</td></tr>';
+                return;
+            }
+            
+            console.log(`✅ Rendering ${appData.branches.length} branches`);
+            const html = appData.branches.map(branch => `
+                <tr>
+                    <td>${branch.name}</td>
+                    <td>${branch.address || 'N/A'}</td>
+                    <td>${branch.phone || 'N/A'}</td>
+                    <td>${branch.email || 'N/A'}</td>
+                    <td>${formatDate(branch.createdAt)}</td>
+                    <td>
+                        <button class="btn btn-sm btn-warning me-1" onclick="editBranch('${branch._id}')">
+                            <i class="fas fa-edit"></i>
+                        </button>
+                        <button class="btn btn-sm btn-danger" onclick="deleteBranch('${branch._id}')">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </td>
+                </tr>
+            `).join('');
+            
+            tbody.innerHTML = html;
+            console.log('✅ Table HTML updated successfully');
+        }
+        
+        function openBranchModal(branchId = null) {
+            const modal = new bootstrap.Modal(document.getElementById('branchModal'));
+            const title = document.getElementById('branchModalTitle');
+            const form = document.getElementById('branchForm');
+            
+            form.reset();
+            document.getElementById('branchId').value = '';
+            
+            if (branchId) {
+                const branch = appData.branches.find(b => b._id === branchId);
+                if (branch) {
+                    title.textContent = 'Edit Branch';
+                    document.getElementById('branchId').value = branch._id;
+                    document.getElementById('branchName').value = branch.name;
+                    document.getElementById('branchAddress').value = branch.address || '';
+                    document.getElementById('branchPhone').value = branch.phone || '';
+                    document.getElementById('branchEmail').value = branch.email || '';
+                }
+            } else {
+                title.textContent = 'Add Branch';
+            }
+            
+            modal.show();
+        }
+        
+        async function saveBranch() {
+            const form = document.getElementById('branchForm');
+            const branchId = document.getElementById('branchId').value;
+            
+            const branchData = {
+                name: document.getElementById('branchName').value,
+                address: document.getElementById('branchAddress').value,
+                phone: document.getElementById('branchPhone').value,
+                email: document.getElementById('branchEmail').value
+            };
+            
+            if (!branchData.name.trim()) {
+                showNotification('Branch name is required', 'error');
+				return;
+			}
+			
+            const saveBtn = document.getElementById('branchSaveText');
+            const originalText = saveBtn.textContent;
+            saveBtn.innerHTML = '<div class="loading-spinner me-2"></div>Saving...';
+            
+            try {
+                let savedBranch;
+                if (branchId) {
+                    savedBranch = await api.updateBranch(branchId, branchData);
+                    const index = appData.branches.findIndex(b => b._id === branchId);
+                    if (index !== -1) {
+                        appData.branches[index] = savedBranch;
+                    }
+                } else {
+                    savedBranch = await api.createBranch(branchData);
+                    appData.branches.push(savedBranch);
+                }
+                
+                updateBranchesTable();
+                bootstrap.Modal.getInstance(document.getElementById('branchModal')).hide();
+                showNotification('Branch saved successfully!', 'success');
+            } catch (error) {
+                console.error('Error saving branch:', error);
+                showNotification('Failed to save branch', 'error');
+            } finally {
+                saveBtn.textContent = originalText;
+            }
+        }
+        
+        async function editBranch(branchId) {
+            openBranchModal(branchId);
+        }
+        
+        async function deleteBranch(branchId) {
+            if (!confirm('Are you sure you want to delete this branch?')) {
+				return;
+            }
+            
+            try {
+                await api.deleteBranch(branchId);
+                appData.branches = appData.branches.filter(b => b._id !== branchId);
+                updateBranchesTable();
+                showNotification('Branch deleted successfully!', 'success');
+            } catch (error) {
+                console.error('Error deleting branch:', error);
+                showNotification('Failed to delete branch', 'error');
+            }
+        }
+        
+        // Settings functions
+        async function loadSettings() {
+            try {
+                const settings = await api.getSettings();
+                appData.settings = settings;
+                updateSettingsForm();
+            } catch (error) {
+                console.error('Error loading settings:', error);
+                showNotification('Failed to load settings', 'error');
+            }
+        }
+        
+        function updateSettingsForm() {
+            const settings = appData.settings;
+            document.getElementById('companyName').value = settings.companyName || '';
+            document.getElementById('currency').value = settings.currency || 'PKR';
+            document.getElementById('dateFormat').value = settings.dateFormat || 'DD/MM/YYYY';
+            document.getElementById('itemsPerPage').value = settings.itemsPerPage || 10;
+            document.getElementById('defaultCostPercent').value = settings.defaultCostPercent || 70;
+        }
+        
+        // Settings form submission
+        document.getElementById('settingsForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const formData = new FormData(this);
+            const settingsData = {
+                companyName: formData.get('companyName'),
+                currency: formData.get('currency'),
+                dateFormat: formData.get('dateFormat'),
+                itemsPerPage: parseInt(formData.get('itemsPerPage')),
+                defaultCostPercent: parseFloat(formData.get('defaultCostPercent'))
+            };
+            
+            try {
+                const savedSettings = await api.updateSettings(settingsData);
+                appData.settings = savedSettings;
+                showNotification('Settings saved successfully!', 'success');
+            } catch (error) {
+                console.error('Error saving settings:', error);
+                showNotification('Failed to save settings', 'error');
+            }
+        });
+        
+        // Add event listeners for sale item calculations
+        document.addEventListener('input', function(e) {
+            if (e.target.matches('#saleItems input[type="number"]')) {
+                calculateSaleTotals();
+            }
+        });
+        
+        // Test API connection
+        async function testApiConnection() {
+            try {
+                console.log('🧪 Testing API connection...');
+                const health = await api.getHealth();
+                console.log('✅ API Health:', health);
+                
+                const branches = await api.getBranches();
+                console.log('✅ API Branches:', branches);
+                console.log('📊 Number of branches:', branches.length);
+                console.log('📋 First branch:', branches[0]);
+                
+                showNotification(`API working! Found ${branches.length} branches`, 'success');
+                
+                // Test table update directly
+                console.log('🧪 Testing table update...');
+                appData.branches = branches;
+                updateBranchesTable();
+                
+            } catch (error) {
+                console.error('❌ API Test Failed:', error);
+                showNotification('API connection failed', 'error');
+            }
+        }
+        
+        // Initialize the application
+        document.addEventListener('DOMContentLoaded', function() {
+            // Sidebar link clicks (delegation)
+            document.getElementById('leftSidebar').addEventListener('click', function(e) {
+                const link = e.target.closest('.nav-link');
+                if (!link) return;
+                e.preventDefault();
+                const section = link.getAttribute('data-section');
+                if (section) showSection(section, { currentTarget: link });
+            });
+
+            // Sidebar toggle for small screens
+            document.getElementById('sidebarToggle').addEventListener('click', function() {
+                const sb = document.getElementById('leftSidebar');
+                if (sb.style.display === 'none' || getComputedStyle(sb).display === 'none') {
+                    sb.style.display = 'block';
+                    document.querySelector('.main-content').style.marginLeft = getComputedStyle(document.documentElement).getPropertyValue('--sidebar-width') || '250px';
+                } else {
+                    sb.style.display = 'none';
+                    document.querySelector('.main-content').style.marginLeft = '0';
+                }
+            });
+
+            console.log('🚀 D.Watson Pharmacy Frontend Initialized');
+            console.log('📡 API Service Ready');
+            console.log('🗄️ No localStorage - All data from MongoDB via API');
+            
+            // Test API connection first
+            testApiConnection();
+            
+            // Load initial dashboard data
+            loadDashboardData();
+        });
+	</script>
+</body>
+</html>
