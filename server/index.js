@@ -186,6 +186,7 @@ app.post('/api/branches', async (req, res) => {
 });
 
 app.put('/api/branches/:id', async (req, res) => {
+  console.log('✏️ PUT /api/branches/:id - Updating branch', req.params.id, req.body);
   try {
     const id = req.params.id;
     const payload = { ...req.body };
@@ -196,9 +197,17 @@ app.put('/api/branches/:id', async (req, res) => {
 
       // Fetch current branch to compare names
       const current = await Branch.findById(id);
-      if (!current) return res.status(404).json({ error: 'Branch not found' });
+      if (!current) {
+        console.log('❌ Branch not found for update:', id);
+        return res.status(404).json({ error: 'Branch not found' });
+      }
 
-      const nameChanged = payload.name.length > 0 && payload.name.localeCompare(current.name || '', undefined, { sensitivity: 'accent' }) !== 0 && payload.name.toLowerCase() !== String(current.name || '').toLowerCase();
+      // Simple case-insensitive comparison
+      const currentName = String(current.name || '').toLowerCase().trim();
+      const newName = payload.name.toLowerCase().trim();
+      const nameChanged = currentName !== newName;
+
+      console.log('🔍 Name comparison:', { currentName, newName, nameChanged });
 
       // Only enforce uniqueness if the name is actually changing
       if (nameChanged) {
@@ -206,13 +215,20 @@ app.put('/api/branches/:id', async (req, res) => {
           _id: { $ne: id },
           name: { $regex: `^${payload.name}$`, $options: 'i' }
         });
-        if (exists) return res.status(409).json({ error: 'Branch with this name already exists' });
+        if (exists) {
+          console.log('❌ Duplicate name found:', payload.name);
+          return res.status(409).json({ error: 'Branch with this name already exists' });
+        }
       }
     }
+    
     const updated = await Branch.findByIdAndUpdate(id, payload, { new: true });
     if (!updated) {
+      console.log('❌ Branch not found after update attempt:', id);
       return res.status(404).json({ error: 'Branch not found' });
     }
+    
+    console.log('✅ Branch updated successfully:', updated._id);
     res.json(updated);
   } catch (error) {
     console.error('❌ Error updating branch:', error.message);
