@@ -26,6 +26,149 @@
             --sidebar-width: 250px;
         }
         
+        /* Professional Print Styles for A4 */
+        @media print {
+            * {
+                -webkit-print-color-adjust: exact !important;
+                print-color-adjust: exact !important;
+            }
+            
+            body {
+                font-family: 'Arial', sans-serif !important;
+                font-size: 12pt !important;
+                line-height: 1.4 !important;
+                color: #000 !important;
+                background: #fff !important;
+                margin: 0 !important;
+                padding: 0 !important;
+            }
+            
+            .no-print {
+                display: none !important;
+            }
+            
+            .print-container {
+                width: 100% !important;
+                max-width: none !important;
+                margin: 0 !important;
+                padding: 0 !important;
+                box-shadow: none !important;
+                border: none !important;
+            }
+            
+            .print-header {
+                text-align: center;
+                margin-bottom: 30px;
+                border-bottom: 2px solid #333;
+                padding-bottom: 15px;
+            }
+            
+            .print-header h1 {
+                font-size: 24pt !important;
+                font-weight: bold !important;
+                margin: 0 0 10px 0 !important;
+                color: #333 !important;
+            }
+            
+            .print-header .company-info {
+                font-size: 10pt !important;
+                color: #666 !important;
+                margin: 5px 0 !important;
+            }
+            
+            .print-header .report-info {
+                font-size: 11pt !important;
+                color: #333 !important;
+                margin: 10px 0 0 0 !important;
+            }
+            
+            .print-section {
+                margin-bottom: 25px;
+                page-break-inside: avoid;
+            }
+            
+            .print-section h3 {
+                font-size: 14pt !important;
+                font-weight: bold !important;
+                color: #333 !important;
+                margin: 0 0 15px 0 !important;
+                border-bottom: 1px solid #ccc;
+                padding-bottom: 5px;
+            }
+            
+            .print-table {
+                width: 100% !important;
+                border-collapse: collapse !important;
+                margin-bottom: 20px !important;
+                font-size: 10pt !important;
+            }
+            
+            .print-table th,
+            .print-table td {
+                border: 1px solid #333 !important;
+                padding: 8px !important;
+                text-align: left !important;
+                vertical-align: top !important;
+            }
+            
+            .print-table th {
+                background-color: #f5f5f5 !important;
+                font-weight: bold !important;
+                color: #333 !important;
+            }
+            
+            .print-table .text-right {
+                text-align: right !important;
+            }
+            
+            .print-table .text-center {
+                text-align: center !important;
+            }
+            
+            .print-summary {
+                display: flex;
+                justify-content: space-between;
+                margin-bottom: 20px;
+                flex-wrap: wrap;
+            }
+            
+            .print-summary-item {
+                flex: 1;
+                min-width: 150px;
+                margin: 5px;
+                padding: 10px;
+                border: 1px solid #ccc;
+                text-align: center;
+            }
+            
+            .print-summary-item .label {
+                font-size: 9pt;
+                color: #666;
+                display: block;
+                margin-bottom: 5px;
+            }
+            
+            .print-summary-item .value {
+                font-size: 12pt;
+                font-weight: bold;
+                color: #333;
+            }
+            
+            .print-footer {
+                margin-top: 30px;
+                text-align: center;
+                font-size: 9pt;
+                color: #666;
+                border-top: 1px solid #ccc;
+                padding-top: 10px;
+            }
+            
+            @page {
+                size: A4;
+                margin: 1in;
+            }
+        }
+        
         * {
             margin: 0;
             padding: 0;
@@ -721,7 +864,7 @@
     </div>
     
     <!-- Navbar -->
-    <nav class="navbar navbar-expand-lg navbar-dark">
+    <nav class="navbar navbar-expand-lg navbar-dark no-print">
         <div class="container-fluid">
             <button class="mobile-menu-toggle" id="mobileMenuToggle">
                 <i class="fas fa-bars"></i>
@@ -733,7 +876,7 @@
     </nav>
     
     <!-- Sidebar -->
-    <div class="sidebar" id="sidebar">
+    <div class="sidebar no-print" id="sidebar">
         <ul class="nav flex-column">
             <li class="nav-item">
                 <a class="nav-link active" href="#" data-section="dashboard">
@@ -1088,7 +1231,7 @@
                 <p class="dashboard-subtitle">Generate and view sales reports</p>
             </div>
             
-            <div class="filter-section">
+            <div class="filter-section no-print">
                 <div class="row g-3">
                     <div class="col-md-3">
                         <label class="form-label">From Date</label>
@@ -1116,7 +1259,7 @@
                 <div class="card-body">
                     <div class="d-flex justify-content-between align-items-center mb-4">
                         <h5 class="card-title mb-0">Report Summary</h5>
-                        <button class="btn btn-primary" id="printReportBtn">
+                        <button class="btn btn-primary no-print" id="printReportBtn">
                             <i class="fas fa-print me-2"></i>Print Report
                         </button>
                     </div>
@@ -1865,7 +2008,7 @@ async deleteCategory(id) {
             
             // Print report button
             document.getElementById('printReportBtn').addEventListener('click', function() {
-                window.print();
+                printProfessionalReport();
             });
             
             // Filter sales list
@@ -3641,6 +3784,346 @@ function updateBranch(id) {
                 notification.style.display = 'none';
             }, 3000);
         }
+        
+        // Professional Print Report Function
+        function printProfessionalReport() {
+            const fromDate = document.getElementById('reportDateFrom').value;
+            const toDate = document.getElementById('reportDateTo').value;
+            const branchId = document.getElementById('reportBranch').value;
+            
+            // Get selected branch info
+            const selectedBranch = branchId ? appData.branches.find(b => b._id === branchId) : null;
+            const branchName = selectedBranch ? selectedBranch.name : 'All Branches';
+            const branchAddress = selectedBranch ? selectedBranch.address : '';
+            
+            // Get report data
+            const reportData = getReportData();
+            
+            // Create print content
+            const printContent = createPrintContent(reportData, fromDate, toDate, branchName, branchAddress);
+            
+            // Open print window
+            const printWindow = window.open('', '_blank', 'width=800,height=600');
+            printWindow.document.write(printContent);
+            printWindow.document.close();
+            
+            // Wait for content to load then print
+            printWindow.onload = function() {
+                printWindow.focus();
+                printWindow.print();
+                printWindow.close();
+            };
+        }
+        
+        function getReportData() {
+            const fromDate = document.getElementById('reportDateFrom').value;
+            const toDate = document.getElementById('reportDateTo').value;
+            const branchId = document.getElementById('reportBranch').value;
+            
+            // Build filters
+            const filters = {};
+            if (fromDate) filters.from = fromDate;
+            if (toDate) filters.to = toDate;
+            if (branchId) filters.branchId = branchId;
+            
+            // Filter sales data
+            let filteredSales = appData.sales;
+            if (filters.from || filters.to) {
+                filteredSales = filteredSales.filter(sale => {
+                    const saleDate = new Date(sale.date);
+                    if (filters.from && saleDate < new Date(filters.from)) return false;
+                    if (filters.to && saleDate > new Date(filters.to)) return false;
+                    return true;
+                });
+            }
+            
+            if (filters.branchId) {
+                filteredSales = filteredSales.filter(sale => {
+                    const saleBranchId = (sale && sale.branchId && sale.branchId._id) ? sale.branchId._id : sale.branchId;
+                    return saleBranchId === filters.branchId;
+                });
+            }
+            
+            // Calculate category-wise totals
+            const categoryTotals = {};
+            appData.categories.forEach(category => {
+                const categorySales = filteredSales.filter(sale => {
+                    const saleCategoryId = (sale && sale.categoryId && sale.categoryId._id) ? sale.categoryId._id : sale.categoryId;
+                    return saleCategoryId === category._id;
+                });
+                
+                const totalSales = categorySales.reduce((sum, sale) => sum + (sale.total || 0), 0);
+                const totalCost = categorySales.reduce((sum, sale) => sum + (sale.costTotal || 0), 0);
+                const totalProfit = totalSales - totalCost;
+                const profitMargin = totalSales > 0 ? (totalProfit / totalSales * 100) : 0;
+                
+                categoryTotals[category._id] = {
+                    name: category.name,
+                    totalSales,
+                    totalCost,
+                    totalProfit,
+                    profitMargin
+                };
+            });
+            
+            // Calculate grand totals
+            const grandTotalSales = Object.values(categoryTotals).reduce((sum, data) => sum + data.totalSales, 0);
+            const grandTotalCost = Object.values(categoryTotals).reduce((sum, data) => sum + data.totalCost, 0);
+            const grandTotalProfit = grandTotalSales - grandTotalCost;
+            const grandProfitMargin = grandTotalSales > 0 ? (grandTotalProfit / grandTotalSales * 100) : 0;
+            
+            return {
+                categoryTotals,
+                grandTotalSales,
+                grandTotalCost,
+                grandTotalProfit,
+                grandProfitMargin,
+                filteredSales
+            };
+        }
+        
+        function createPrintContent(reportData, fromDate, toDate, branchName, branchAddress) {
+            const currentDate = new Date().toLocaleDateString('en-GB');
+            const dateRange = fromDate && toDate ? 
+                `${new Date(fromDate).toLocaleDateString('en-GB')} - ${new Date(toDate).toLocaleDateString('en-GB')}` : 
+                'All Time';
+            
+            return `
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Sales Report - D.Watson Pharmacy</title>
+    <style>
+        @page {
+            size: A4;
+            margin: 1in;
+        }
+        
+        body {
+            font-family: Arial, sans-serif;
+            font-size: 12pt;
+            line-height: 1.4;
+            color: #000;
+            background: #fff;
+            margin: 0;
+            padding: 0;
+        }
+        
+        .print-header {
+            text-align: center;
+            margin-bottom: 30px;
+            border-bottom: 2px solid #333;
+            padding-bottom: 15px;
+        }
+        
+        .print-header h1 {
+            font-size: 24pt;
+            font-weight: bold;
+            margin: 0 0 10px 0;
+            color: #333;
+        }
+        
+        .print-header .company-info {
+            font-size: 10pt;
+            color: #666;
+            margin: 5px 0;
+        }
+        
+        .print-header .report-info {
+            font-size: 11pt;
+            color: #333;
+            margin: 10px 0 0 0;
+        }
+        
+        .print-section {
+            margin-bottom: 25px;
+            page-break-inside: avoid;
+        }
+        
+        .print-section h3 {
+            font-size: 14pt;
+            font-weight: bold;
+            color: #333;
+            margin: 0 0 15px 0;
+            border-bottom: 1px solid #ccc;
+            padding-bottom: 5px;
+        }
+        
+        .print-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 20px;
+            font-size: 10pt;
+        }
+        
+        .print-table th,
+        .print-table td {
+            border: 1px solid #333;
+            padding: 8px;
+            text-align: left;
+            vertical-align: top;
+        }
+        
+        .print-table th {
+            background-color: #f5f5f5;
+            font-weight: bold;
+            color: #333;
+        }
+        
+        .print-table .text-right {
+            text-align: right;
+        }
+        
+        .print-table .text-center {
+            text-align: center;
+        }
+        
+        .print-summary {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+        
+        .print-summary-item {
+            flex: 1;
+            min-width: 150px;
+            margin: 5px;
+            padding: 10px;
+            border: 1px solid #ccc;
+            text-align: center;
+        }
+        
+        .print-summary-item .label {
+            font-size: 9pt;
+            color: #666;
+            display: block;
+            margin-bottom: 5px;
+        }
+        
+        .print-summary-item .value {
+            font-size: 12pt;
+            font-weight: bold;
+            color: #333;
+        }
+        
+        .print-footer {
+            margin-top: 30px;
+            text-align: center;
+            font-size: 9pt;
+            color: #666;
+            border-top: 1px solid #ccc;
+            padding-top: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="print-container">
+        <div class="print-header">
+            <h1>D.Watson Group of Pharmacy</h1>
+            <div class="company-info">Sales Report</div>
+            <div class="report-info">
+                <strong>Branch:</strong> ${branchName}<br>
+                ${branchAddress ? `<strong>Address:</strong> ${branchAddress}<br>` : ''}
+                <strong>Period:</strong> ${dateRange}<br>
+                <strong>Generated:</strong> ${currentDate}
+            </div>
+        </div>
+        
+        <div class="print-section">
+            <h3>Summary</h3>
+            <div class="print-summary">
+                <div class="print-summary-item">
+                    <span class="label">Total Sales</span>
+                    <span class="value">PKR ${reportData.grandTotalSales.toLocaleString()}</span>
+                </div>
+                <div class="print-summary-item">
+                    <span class="label">Total Cost</span>
+                    <span class="value">PKR ${reportData.grandTotalCost.toLocaleString()}</span>
+                </div>
+                <div class="print-summary-item">
+                    <span class="label">Total Profit</span>
+                    <span class="value">PKR ${reportData.grandTotalProfit.toLocaleString()}</span>
+                </div>
+                <div class="print-summary-item">
+                    <span class="label">Profit Margin</span>
+                    <span class="value">${reportData.grandProfitMargin.toFixed(1)}%</span>
+                </div>
+            </div>
+        </div>
+        
+        <div class="print-section">
+            <h3>Category-wise Sales Breakdown</h3>
+            <table class="print-table">
+                <thead>
+                    <tr>
+                        <th>Category</th>
+                        <th class="text-right">Total Sales (PKR)</th>
+                        <th class="text-right">Total Cost (PKR)</th>
+                        <th class="text-right">Total Profit (PKR)</th>
+                        <th class="text-center">Profit Margin</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    ${Object.values(reportData.categoryTotals).map(cat => `
+                        <tr>
+                            <td>${cat.name}</td>
+                            <td class="text-right">${cat.totalSales.toLocaleString()}</td>
+                            <td class="text-right">${cat.totalCost.toLocaleString()}</td>
+                            <td class="text-right">${cat.totalProfit.toLocaleString()}</td>
+                            <td class="text-center">${cat.profitMargin.toFixed(1)}%</td>
+                        </tr>
+                    `).join('')}
+                    <tr style="font-weight: bold; background-color: #f9f9f9;">
+                        <td><strong>GRAND TOTAL</strong></td>
+                        <td class="text-right"><strong>${reportData.grandTotalSales.toLocaleString()}</strong></td>
+                        <td class="text-right"><strong>${reportData.grandTotalCost.toLocaleString()}</strong></td>
+                        <td class="text-right"><strong>${reportData.grandTotalProfit.toLocaleString()}</strong></td>
+                        <td class="text-center"><strong>${reportData.grandProfitMargin.toFixed(1)}%</strong></td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+        
+        <div class="print-section">
+            <h3>Detailed Transaction List</h3>
+            <table class="print-table">
+                <thead>
+                    <tr>
+                        <th>Date</th>
+                        <th>Branch</th>
+                        <th>Category</th>
+                        <th class="text-right">Sales (PKR)</th>
+                        <th class="text-right">Cost (PKR)</th>
+                        <th class="text-right">Profit (PKR)</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    ${reportData.filteredSales.map(sale => `
+                        <tr>
+                            <td>${new Date(sale.date).toLocaleDateString('en-GB')}</td>
+                            <td>${sale.branchId?.name || 'Unknown'}</td>
+                            <td>${sale.categoryId?.name || 'Unknown'}</td>
+                            <td class="text-right">${(sale.total || 0).toLocaleString()}</td>
+                            <td class="text-right">${(sale.costTotal || 0).toLocaleString()}</td>
+                            <td class="text-right">${(sale.profit || 0).toLocaleString()}</td>
+                        </tr>
+                    `).join('')}
+                </tbody>
+            </table>
+        </div>
+        
+        <div class="print-footer">
+            <p>This report was generated on ${currentDate} by D.Watson Pharmacy Management System</p>
+            <p>For any queries, please contact the management</p>
+        </div>
+    </div>
+</body>
+</html>
+            `;
+        }
     </script>
 </body>
 </html>
+
