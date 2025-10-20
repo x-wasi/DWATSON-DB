@@ -2369,6 +2369,8 @@
         
         function initializeTrendsChart() {
             const ctx = document.getElementById('trendsChart').getContext('2d');
+            const existingChart = Chart.getChart("trendsChart");
+if (existingChart) existingChart.destroy();
             
             trendsChart = new Chart(ctx, {
                 type: 'line',
@@ -3266,3 +3268,4 @@
     </script>
 </body>
 </html>
+
