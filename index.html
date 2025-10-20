@@ -1768,6 +1768,30 @@ async deleteCategory(id) {
                 document.getElementById('sidebar').classList.remove('active');
                 this.classList.remove('active');
             });
+
+            // Accessibility and reset for Branch modal
+            const branchModalEl = document.getElementById('addBranchModal');
+            if (branchModalEl) {
+                branchModalEl.addEventListener('hidden.bs.modal', function () {
+                    if (document.activeElement && typeof document.activeElement.blur === 'function') {
+                        document.activeElement.blur();
+                    }
+                    // Reset modal title and button back to create mode
+                    const titleEl = document.getElementById('addBranchModalLabel');
+                    if (titleEl) titleEl.textContent = 'Add New Branch';
+                    const saveBtn = document.getElementById('saveBranchBtn');
+                    if (saveBtn) {
+                        saveBtn.textContent = 'Save Branch';
+                        saveBtn.onclick = function() {
+                            if (document.getElementById('branchForm').checkValidity()) {
+                                saveBranch();
+                            } else {
+                                document.getElementById('branchForm').reportValidity();
+                            }
+                        };
+                    }
+                });
+            }
             
             // Navigation
             document.querySelectorAll('.sidebar .nav-link').forEach(link => {
@@ -1870,14 +1894,15 @@ async deleteCategory(id) {
                 modal.show();
             });
             
-            // Save branch button
-            document.getElementById('saveBranchBtn').addEventListener('click', function() {
+            // Initialize Save Branch button to create mode by default
+            const saveBranchBtn = document.getElementById('saveBranchBtn');
+            saveBranchBtn.onclick = function() {
                 if (document.getElementById('branchForm').checkValidity()) {
                     saveBranch();
                 } else {
                     document.getElementById('branchForm').reportValidity();
                 }
-            });
+            };
             
             // Update sale button
             document.getElementById('updateSaleBtn').addEventListener('click', function() {
@@ -2075,14 +2100,20 @@ async deleteCategory(id) {
             // Filter data by branch if selected
             let filteredData = appData.sales;
             if (branchFilter) {
-                filteredData = appData.sales.filter(sale => sale.branchId == branchFilter);
+                filteredData = appData.sales.filter(sale => {
+                    const saleBranchId = (sale && sale.branchId && sale.branchId._id) ? sale.branchId._id : sale.branchId;
+                    return saleBranchId == branchFilter;
+                });
             }
             
             // Calculate totals by category
             const categoryData = {};
             
             appData.categories.forEach(category => {
-                const categorySales = filteredData.filter(sale => sale.categoryId === category._id);
+                const categorySales = filteredData.filter(sale => {
+                    const saleCategoryId = (sale && sale.categoryId && sale.categoryId._id) ? sale.categoryId._id : sale.categoryId;
+                    return saleCategoryId === category._id;
+                });
                 const totalSales = categorySales.reduce((sum, sale) => sum + (sale.total || 0), 0);
                 const totalCost = categorySales.reduce((sum, sale) => sum + (sale.costTotal || 0), 0);
                 const totalProfit = totalSales - totalCost;
@@ -2184,7 +2215,10 @@ async deleteCategory(id) {
             appData.branches.forEach(branch => {
                 if (branchFilter && branch._id != branchFilter) return;
                 
-                const branchSales = appData.sales.filter(sale => sale.branchId === branch._id);
+                const branchSales = appData.sales.filter(sale => {
+                    const saleBranchId = (sale && sale.branchId && sale.branchId._id) ? sale.branchId._id : sale.branchId;
+                    return saleBranchId === branch._id;
+                });
                 const totalSales = branchSales.reduce((sum, sale) => sum + (sale.total || 0), 0);
                 const totalCost = branchSales.reduce((sum, sale) => sum + (sale.costTotal || 0), 0);
                 const totalProfit = totalSales - totalCost;
@@ -2194,7 +2228,10 @@ async deleteCategory(id) {
                 const categoryDetails = {};
                 
                 appData.categories.forEach(category => {
-                    const categorySales = branchSales.filter(sale => sale.categoryId === category._id);
+                    const categorySales = branchSales.filter(sale => {
+                        const saleCategoryId = (sale && sale.categoryId && sale.categoryId._id) ? sale.categoryId._id : sale.categoryId;
+                        return saleCategoryId === category._id;
+                    });
                     const catSales = categorySales.reduce((sum, sale) => sum + (sale.total || 0), 0);
                     const catCost = categorySales.reduce((sum, sale) => sum + (sale.costTotal || 0), 0);
                     const catProfit = catSales - catCost;
@@ -2590,10 +2627,11 @@ if (existingChart) existingChart.destroy();
                 }
                 
                 filteredData.forEach(sale => {
-                    if (groupedData[sale.date]) {
-                        groupedData[sale.date].sales += sale.total || 0;
-                        groupedData[sale.date].cost += sale.costTotal || 0;
-                        groupedData[sale.date].profit += sale.profit || 0;
+                    const dateKey = (sale && sale.date) ? String(sale.date).split('T')[0] : '';
+                    if (dateKey && groupedData[dateKey]) {
+                        groupedData[dateKey].sales += sale.total || 0;
+                        groupedData[dateKey].cost += sale.costTotal || 0;
+                        groupedData[dateKey].profit += sale.profit || 0;
                     }
                 });
                 
@@ -3243,11 +3281,17 @@ function saveSalesEntry() {
         // Save branch
         function saveBranch() {
             const branchData = {
-                name: document.getElementById('branchName').value,
+                name: document.getElementById('branchName').value.trim(),
                 address: document.getElementById('branchAddress').value,
                 phone: document.getElementById('branchPhone').value,
                 email: document.getElementById('branchEmail').value
             };
+            // Prevent duplicate names (case-insensitive) on create
+            const exists = (appData.branches || []).some(b => (b.name || '').trim().toLowerCase() === branchData.name.toLowerCase());
+            if (exists) {
+                showNotification('Branch with this name already exists', 'error');
+                return;
+            }
             
             api.createBranch(branchData).then(branch => {
                 // Close modal
@@ -3412,12 +3456,64 @@ function updateBranch(id) {
         })
         .catch(error => {
             console.error('Error updating branch:', error);
-            showNotification('Failed to update branch', 'error');
+            try {
+                // Attempt to parse fetch error message from our request() wrapper
+                const msg = String(error.message || '');
+                if (msg.includes('HTTP 409')) {
+                    showNotification('Branch with this name already exists', 'error');
+                } else {
+                    showNotification('Failed to update branch', 'error');
+                }
+            } catch (_) {
+                showNotification('Failed to update branch', 'error');
+            }
         });
 }
 
+        
+        // Edit branch
+        function editBranch(id) {
+            // Prefer using current in-memory list if available
+            const current = (appData && Array.isArray(appData.branches)) ? appData.branches : [];
+            const found = current.find(b => b._id === id);
+            const loadAndShow = (branch) => {
+                if (!branch) {
+                    showNotification('Branch not found', 'error');
+                    return;
+                }
+                // Fill form fields
+                document.getElementById('branchName').value = branch.name || '';
+                document.getElementById('branchAddress').value = branch.address || '';
+                document.getElementById('branchPhone').value = branch.phone || '';
+                document.getElementById('branchEmail').value = branch.email || '';
 
+                // Switch Save to Update
+                const saveBtn = document.getElementById('saveBranchBtn');
+                saveBtn.textContent = 'Update Branch';
+                saveBtn.onclick = function() { updateBranch(id); };
 
+                // Update modal title to Edit
+                const titleEl = document.getElementById('addBranchModalLabel');
+                if (titleEl) titleEl.textContent = 'Edit Branch';
+
+                // Show modal
+                const modal = new bootstrap.Modal(document.getElementById('addBranchModal'));
+                modal.show();
+            };
+
+            if (found) {
+                loadAndShow(found);
+            } else {
+                // Fallback to API if not in memory
+                api.getBranches()
+                    .then(list => loadAndShow(list.find(b => b._id === id)))
+                    .catch(err => {
+                        console.error('Error fetching branch data:', err);
+                        showNotification('Failed to load branch data', 'error');
+                    });
+            }
+        }
+        
         // Delete branch
         function deleteBranch(id) {
             if (confirm('Are you sure you want to delete this branch? This will also delete all sales data for this branch.')) {
