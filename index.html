@@ -1417,106 +1417,231 @@
                 this.baseURL = '/api';
             }
             
-            async request(endpoint, options = {}) {
-                // Add cache-busting parameter to prevent 304 responses
-                const separator = endpoint.includes('?') ? '&' : '?';
-                const url = `${this.baseURL}${endpoint}${separator}_t=${Date.now()}`;
+            // async request(endpoint, options = {}) {
+            //     // Add cache-busting parameter to prevent 304 responses
+            //     const separator = endpoint.includes('?') ? '&' : '?';
+            //     const url = `${this.baseURL}${endpoint}${separator}_t=${Date.now()}`;
                 
-                const config = {
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Cache-Control': 'no-cache',
-                        'Pragma': 'no-cache',
-                        ...options.headers
-                    },
-                    ...options
-                };
+            //     const config = {
+            //         headers: {
+            //             'Content-Type': 'application/json',
+            //             'Cache-Control': 'no-cache',
+            //             'Pragma': 'no-cache',
+            //             ...options.headers
+            //         },
+            //         ...options
+            //     };
                 
-                try {
-                    console.log(`🌐 Making API request to: ${url}`);
-                    const response = await fetch(url, config);
+            //     try {
+            //         console.log(`🌐 Making API request to: ${url}`);
+            //         const response = await fetch(url, config);
                     
-                    console.log(`📡 API Response: ${response.status} ${response.statusText}`);
+            //         console.log(`📡 API Response: ${response.status} ${response.statusText}`);
                     
-                    if (!response.ok) {
-                        throw new Error(`HTTP error! status: ${response.status}`);
-                    }
+            //         if (!response.ok) {
+            //             throw new Error(`HTTP error! status: ${response.status}`);
+            //         }
                     
-                    const data = await response.json();
-                    console.log(`✅ API Data received:`, data);
-                    return data;
-                } catch (error) {
-                    console.error(`❌ API request failed for ${endpoint}:`, error);
-                    throw error;
-                }
-            }
+            //         const data = await response.json();
+            //         console.log(`✅ API Data received:`, data);
+            //         return data;
+            //     } catch (error) {
+            //         console.error(`❌ API request failed for ${endpoint}:`, error);
+            //         throw error;
+            //     }
+            // }
             
-            // Health
-            async getHealth() {
-                return this.request('/health');
-            }
+            // // Health
+            // async getHealth() {
+            //     return this.request('/health');
+            // }
             
-            // Settings
-            async getSettings() {
-                return this.request('/settings');
-            }
+            // // Settings
+            // async getSettings() {
+            //     return this.request('/settings');
+            // }
             
-            async updateSettings(settings) {
-                return this.request('/settings', {
-                    method: 'PUT',
-                    body: JSON.stringify(settings)
-                });
-            }
+            // async updateSettings(settings) {
+            //     return this.request('/settings', {
+            //         method: 'PUT',
+            //         body: JSON.stringify(settings)
+            //     });
+            // }
             
-            // Branches
-            async getBranches() {
-                return this.request('/branches');
-            }
+            // // Branches
+            // async getBranches() {
+            //     return this.request('/branches');
+            // }
             
-            async createBranch(branch) {
-                return this.request('/branches', {
-                    method: 'POST',
-                    body: JSON.stringify(branch)
-                });
-            }
+            // async createBranch(branch) {
+            //     return this.request('/branches', {
+            //         method: 'POST',
+            //         body: JSON.stringify(branch)
+            //     });
+            // }
             
-            async updateBranch(id, branch) {
-                return this.request(`/branches/${id}`, {
-                    method: 'PUT',
-                    body: JSON.stringify(branch)
-                });
-            }
+            // async updateBranch(id, branch) {
+            //     return this.request(`/branches/${id}`, {
+            //         method: 'PUT',
+            //         body: JSON.stringify(branch)
+            //     });
+            // }
             
-            async deleteBranch(id) {
-                return this.request(`/branches/${id}`, {
-                    method: 'DELETE'
-                });
-            }
+            // async deleteBranch(id) {
+            //     return this.request(`/branches/${id}`, {
+            //         method: 'DELETE'
+            //     });
+            // }
             
-            // Categories
-            async getCategories() {
-                return this.request('/categories');
-            }
+            // // Categories
+            // async getCategories() {
+            //     return this.request('/categories');
+            // }
             
-            async createCategory(category) {
-                return this.request('/categories', {
-                    method: 'POST',
-                    body: JSON.stringify(category)
-                });
-            }
+            // async createCategory(category) {
+            //     return this.request('/categories', {
+            //         method: 'POST',
+            //         body: JSON.stringify(category)
+            //     });
+            // }
             
-            async updateCategory(id, category) {
-                return this.request(`/categories/${id}`, {
-                    method: 'PUT',
-                    body: JSON.stringify(category)
-                });
-            }
+            // async updateCategory(id, category) {
+            //     return this.request(`/categories/${id}`, {
+            //         method: 'PUT',
+            //         body: JSON.stringify(category)
+            //     });
+            // }
             
-            async deleteCategory(id) {
-                return this.request(`/categories/${id}`, {
-                    method: 'DELETE'
-                });
-            }
+            // async deleteCategory(id) {
+            //     return this.request(`/categories/${id}`, {
+            //         method: 'DELETE'
+            //     });
+            // }
+
+
+
+            // 🌐 Generic API request handler
+async request(endpoint, options = {}) {
+    // Add cache-busting timestamp to avoid browser caching (304)
+    const separator = endpoint.includes('?') ? '&' : '?';
+    const url = `${this.baseURL}${endpoint}${separator}_t=${Date.now()}`;
+
+    // Merge headers and options
+    const config = {
+        method: options.method || 'GET',
+        headers: {
+            'Content-Type': 'application/json',
+            'Cache-Control': 'no-cache',
+            'Pragma': 'no-cache',
+            ...options.headers
+        },
+        body: options.body || null
+    };
+
+    try {
+        console.log(`🌐 Making API request to: ${url} (${config.method})`);
+        const response = await fetch(url, config);
+        console.log(`📡 API Response: ${response.status} ${response.statusText}`);
+
+        // Handle non-OK responses
+        if (!response.ok) {
+            const errorText = await response.text();
+            console.error(`❌ API Error Response: ${errorText}`);
+            throw new Error(`HTTP ${response.status}: ${errorText || response.statusText}`);
+        }
+
+        // If no content (204), return null
+        if (response.status === 204) return null;
+
+        // Parse and return JSON data
+        const data = await response.json();
+        console.log('✅ API Data received:', data);
+        return data;
+    } catch (error) {
+        console.error(`❌ API request failed for ${endpoint}:`, error);
+        throw error;
+    }
+}
+
+/* ===============================
+   🌿 HEALTH
+================================ */
+async getHealth() {
+    return this.request('/health');
+}
+
+/* ===============================
+   ⚙️ SETTINGS
+================================ */
+async getSettings() {
+    return this.request('/settings');
+}
+
+async updateSettings(settings) {
+    return this.request('/settings', {
+        method: 'PUT',
+        body: JSON.stringify(settings)
+    });
+}
+
+/* ===============================
+   🏢 BRANCHES
+================================ */
+async getBranches() {
+    return this.request('/branches');
+}
+
+async createBranch(branch) {
+    return this.request('/branches', {
+        method: 'POST',
+        body: JSON.stringify(branch)
+    });
+}
+
+async updateBranch(id, branch) {
+    if (!id) throw new Error('❌ Missing branch ID for updateBranch');
+    return this.request(`/branches/${id}`, {
+        method: 'PUT',
+        body: JSON.stringify(branch)
+    });
+}
+
+async deleteBranch(id) {
+    if (!id) throw new Error('❌ Missing branch ID for deleteBranch');
+    return this.request(`/branches/${id}`, {
+        method: 'DELETE'
+    });
+}
+
+/* ===============================
+   📦 CATEGORIES
+================================ */
+async getCategories() {
+    return this.request('/categories');
+}
+
+async createCategory(category) {
+    return this.request('/categories', {
+        method: 'POST',
+        body: JSON.stringify(category)
+    });
+}
+
+async updateCategory(id, category) {
+    if (!id) throw new Error('❌ Missing category ID for updateCategory');
+    return this.request(`/categories/${id}`, {
+        method: 'PUT',
+        body: JSON.stringify(category)
+    });
+}
+
+async deleteCategory(id) {
+    if (!id) throw new Error('❌ Missing category ID for deleteCategory');
+    return this.request(`/categories/${id}`, {
+        method: 'DELETE'
+    });
+}
+
             
             // Sales
             async getSales(filters = {}) {
@@ -2510,70 +2635,139 @@ if (existingChart) existingChart.destroy();
             document.getElementById('totalProfit').value = totalProfit.toFixed(2);
         }
         
-        // Save sales entry
-        function saveSalesEntry() {
-            const date = document.getElementById('saleDate').value;
-            const branchId = document.getElementById('saleBranch').value;
-            const notes = document.getElementById('saleNotes').value;
+        // // Save sales entry
+        // function saveSalesEntry() {
+        //     const date = document.getElementById('saleDate').value;
+        //     const branchId = document.getElementById('saleBranch').value;
+        //     const notes = document.getElementById('saleNotes').value;
             
-            if (!date || !branchId) {
-                showNotification('Please fill in all required fields', 'error');
-                return;
-            }
+        //     if (!date || !branchId) {
+        //         showNotification('Please fill in all required fields', 'error');
+        //         return;
+        //     }
             
-            // Create sales entries for each category
-            const salesPromises = [];
+        //     // Create sales entries for each category
+        //     const salesPromises = [];
             
-            document.querySelectorAll('.category-sales').forEach(input => {
-                const categoryId = input.getAttribute('data-category');
-                const sales = parseFloat(input.value) || 0;
-                const costInput = document.querySelector(`.category-cost[data-category="${categoryId}"]`);
-                const cost = parseFloat(costInput.value) || 0;
+        //     document.querySelectorAll('.category-sales').forEach(input => {
+        //         const categoryId = input.getAttribute('data-category');
+        //         const sales = parseFloat(input.value) || 0;
+        //         const costInput = document.querySelector(`.category-cost[data-category="${categoryId}"]`);
+        //         const cost = parseFloat(costInput.value) || 0;
                 
-                if (sales > 0) {
-                    const saleData = {
-                        date: date,
-                        branchId: branchId,
-                        categoryId: categoryId,
-                        total: sales,
-                        costTotal: cost,
-                        profit: sales - cost,
-                        notes: notes
-                    };
+        //         if (sales > 0) {
+        //             const saleData = {
+        //                 date: date,
+        //                 branchId: branchId,
+        //                 categoryId: categoryId,
+        //                 total: sales,
+        //                 costTotal: cost,
+        //                 profit: sales - cost,
+        //                 notes: notes
+        //             };
                     
-                    salesPromises.push(api.createSale(saleData));
-                }
-            });
+        //             salesPromises.push(api.createSale(saleData));
+        //         }
+        //     });
             
-            // Wait for all sales to be created
-            Promise.all(salesPromises).then(() => {
-                // Reset form
-                document.getElementById('salesEntryForm').reset();
-                document.getElementById('totalSales').value = '';
-                document.getElementById('totalCost').value = '';
-                document.getElementById('totalProfit').value = '';
+        //     // Wait for all sales to be created
+        //     Promise.all(salesPromises).then(() => {
+        //         // Reset form
+        //         document.getElementById('salesEntryForm').reset();
+        //         document.getElementById('totalSales').value = '';
+        //         document.getElementById('totalCost').value = '';
+        //         document.getElementById('totalProfit').value = '';
                 
-                // Set today's date again
-                const today = new Date().toISOString().split('T')[0];
-                document.getElementById('saleDate').value = today;
+        //         // Set today's date again
+        //         const today = new Date().toISOString().split('T')[0];
+        //         document.getElementById('saleDate').value = today;
                 
-                showNotification('Sales entry saved successfully!', 'success');
+        //         showNotification('Sales entry saved successfully!', 'success');
                 
-                // Update dashboard if we're on dashboard
-                if (document.getElementById('dashboard-section').classList.contains('active')) {
-                    loadDashboard();
-                }
+        //         // Update dashboard if we're on dashboard
+        //         if (document.getElementById('dashboard-section').classList.contains('active')) {
+        //             loadDashboard();
+        //         }
                 
-                // Refresh sales list if it's visible
-                if (document.getElementById('salesInvoicesContainer').children.length > 0) {
-                    loadSalesList();
-                }
-            }).catch(error => {
-                console.error('Error saving sales entry:', error);
-                showNotification('Failed to save sales entry', 'error');
-            });
+        //         // Refresh sales list if it's visible
+        //         if (document.getElementById('salesInvoicesContainer').children.length > 0) {
+        //             loadSalesList();
+        //         }
+        //     }).catch(error => {
+        //         console.error('Error saving sales entry:', error);
+        //         showNotification('Failed to save sales entry', 'error');
+        //     });
+        // }
+        // Save sales entry
+function saveSalesEntry() {
+    const date = document.getElementById('saleDate').value;
+    const branchId = document.getElementById('saleBranch').value;
+    const notes = document.getElementById('saleNotes').value;
+
+    if (!date || !branchId) {
+        showNotification('Please fill in all required fields', 'error');
+        return;
+    }
+
+    // Create sales entries for each category
+    const salesPromises = [];
+
+    document.querySelectorAll('.category-sales').forEach(input => {
+        const categoryId = input.getAttribute('data-category');
+        const sales = parseFloat(input.value) || 0;
+        const costInput = document.querySelector(`.category-cost[data-category="${categoryId}"]`);
+        const cost = parseFloat(costInput.value) || 0;
+
+        // ✅ Get category name (text) for backend "category" field
+        const categoryLabel = document.querySelector(`label[for="${input.id}"]`);
+        const categoryName = categoryLabel ? categoryLabel.textContent.trim() : 'Unknown';
+
+        if (sales > 0) {
+            const saleData = {
+                date: date,
+                branchId: branchId,
+                categoryId: categoryId,
+                // ✅ Add the category name string (required by backend schema)
+                category: categoryName,
+                total: sales,
+                costTotal: cost,
+                profit: sales - cost,
+                notes: notes
+            };
+
+            salesPromises.push(api.createSale(saleData));
         }
-        
+    });
+
+    // Wait for all sales to be created
+    Promise.all(salesPromises).then(() => {
+        // Reset form
+        document.getElementById('salesEntryForm').reset();
+        document.getElementById('totalSales').value = '';
+        document.getElementById('totalCost').value = '';
+        document.getElementById('totalProfit').value = '';
+
+        // Set today's date again
+        const today = new Date().toISOString().split('T')[0];
+        document.getElementById('saleDate').value = today;
+
+        showNotification('Sales entry saved successfully!', 'success');
+
+        // Update dashboard if we're on dashboard
+        if (document.getElementById('dashboard-section').classList.contains('active')) {
+            loadDashboard();
+        }
+
+        // Refresh sales list if it's visible
+        if (document.getElementById('salesInvoicesContainer').children.length > 0) {
+            loadSalesList();
+        }
+    }).catch(error => {
+        console.error('Error saving sales entry:', error);
+        showNotification('Failed to save sales entry', 'error');
+    });
+}
+
         // Edit sale
         function editSale(id) {
             api.getSales().then(salesData => {
@@ -3077,69 +3271,153 @@ if (existingChart) existingChart.destroy();
             });
         }
         
-        // Edit branch
-        function editBranch(id) {
-            api.getBranches().then(branchesData => {
-                const branch = branchesData.find(b => b._id === id);
-                if (branch) {
-                    document.getElementById('branchName').value = branch.name;
-                    document.getElementById('branchAddress').value = branch.address || '';
-                    document.getElementById('branchPhone').value = branch.phone || '';
-                    document.getElementById('branchEmail').value = branch.email || '';
+        // // Edit branch
+        // function editBranch(id) {
+        //     api.getBranches().then(branchesData => {
+        //         const branch = branchesData.find(b => b._id === id);
+        //         if (branch) {
+        //             document.getElementById('branchName').value = branch.name;
+        //             document.getElementById('branchAddress').value = branch.address || '';
+        //             document.getElementById('branchPhone').value = branch.phone || '';
+        //             document.getElementById('branchEmail').value = branch.email || '';
                     
-                    // Change save button to update
-                    const saveBtn = document.getElementById('saveBranchBtn');
-                    saveBtn.textContent = 'Update Branch';
-                    saveBtn.onclick = function() {
-                        updateBranch(id);
-                    };
+        //             // Change save button to update
+        //             const saveBtn = document.getElementById('saveBranchBtn');
+        //             saveBtn.textContent = 'Update Branch';
+        //             saveBtn.onclick = function() {
+        //                 updateBranch(id);
+        //             };
                     
-                    // Show modal
-                    const modal = new bootstrap.Modal(document.getElementById('addBranchModal'));
-                    modal.show();
-                }
-            }).catch(error => {
-                console.error('Error fetching branch data:', error);
-                showNotification('Failed to load branch data', 'error');
-            });
-        }
+        //             // Show modal
+        //             const modal = new bootstrap.Modal(document.getElementById('addBranchModal'));
+        //             modal.show();
+        //         }
+        //     }).catch(error => {
+        //         console.error('Error fetching branch data:', error);
+        //         showNotification('Failed to load branch data', 'error');
+        //     });
+        // }
         
-        // Update branch
-        function updateBranch(id) {
-            const branchData = {
-                name: document.getElementById('branchName').value,
-                address: document.getElementById('branchAddress').value,
-                phone: document.getElementById('branchPhone').value,
-                email: document.getElementById('branchEmail').value
-            };
+
+
+//         // Edit branch
+// function editBranch(id) {
+//     api.getBranches().then(branchesData => {
+//         const branch = branchesData.find(b => b._id === id);
+//         if (branch) {
+//             // ✅ Fill form fields with branch data
+//             document.getElementById('branchName').value = branch.name || '';
+//             document.getElementById('branchAddress').value = branch.address || '';
+//             document.getElementById('branchPhone').value = branch.phone || '';
+//             document.getElementById('branchEmail').value = branch.email || '';
+
+//             // ✅ Change save button to update mode
+//             const saveBtn = document.getElementById('saveBranchBtn');
+//             saveBtn.textContent = 'Update Branch';
+
+//             // ✅ Clear previous onclick (avoid duplicate triggers)
+//             saveBtn.onclick = null;
+
+//             // ✅ Attach proper update handler
+//             saveBtn.onclick = function() {
+//                 updateBranch(id);  // This will send PUT request to backend
+//             };
+
+//             // ✅ Show modal
+//             const modal = new bootstrap.Modal(document.getElementById('addBranchModal'));
+//             modal.show();
+//         } else {
+//             showNotification('Branch not found', 'error');
+//         }
+//     }).catch(error => {
+//         console.error('Error fetching branch data:', error);
+//         showNotification('Failed to load branch data', 'error');
+//     });
+// }
+
+//         // // Update branch
+//         // function updateBranch(id) {
+//         //     const branchData = {
+//         //         name: document.getElementById('branchName').value,
+//         //         address: document.getElementById('branchAddress').value,
+//         //         phone: document.getElementById('branchPhone').value,
+//         //         email: document.getElementById('branchEmail').value
+//         //     };
             
-            api.updateBranch(id, branchData).then(() => {
-                // Close modal
-                bootstrap.Modal.getInstance(document.getElementById('addBranchModal')).hide();
+//         //     api.updateBranch(id, branchData).then(() => {
+//         //         // Close modal
+//         //         bootstrap.Modal.getInstance(document.getElementById('addBranchModal')).hide();
                 
-                // Reset form
-                document.getElementById('branchForm').reset();
+//         //         // Reset form
+//         //         document.getElementById('branchForm').reset();
                 
-                // Reset save button
-                const saveBtn = document.getElementById('saveBranchBtn');
-                saveBtn.textContent = 'Save Branch';
-                saveBtn.onclick = saveBranch;
+//         //         // Reset save button
+//         //         const saveBtn = document.getElementById('saveBranchBtn');
+//         //         saveBtn.textContent = 'Save Branch';
+//         //         saveBtn.onclick = saveBranch;
                 
-                // Show notification
-                showNotification('Branch updated successfully!', 'success');
+//         //         // Show notification
+//         //         showNotification('Branch updated successfully!', 'success');
                 
-                // Update dropdowns
-                populateBranchSelectors();
+//         //         // Update dropdowns
+//         //         populateBranchSelectors();
                 
-                // Reload branches
-                loadBranches();
-                loadDashboard();
-            }).catch(error => {
-                console.error('Error updating branch:', error);
-                showNotification('Failed to update branch', 'error');
-            });
-        }
+//         //         // Reload branches
+//         //         loadBranches();
+//         //         loadDashboard();
+//         //     }).catch(error => {
+//         //         console.error('Error updating branch:', error);
+//         //         showNotification('Failed to update branch', 'error');
+//         //     });
+//         // }
         
+
+//         // ✅ Update branch (final fixed version)
+function updateBranch(id) {
+    // Collect form data
+    console.log("🛠️ updateBranch() called with ID:", id);
+
+    const branchData = {
+        name: document.getElementById('branchName').value.trim(),
+        address: document.getElementById('branchAddress').value.trim(),
+        phone: document.getElementById('branchPhone').value.trim(),
+        email: document.getElementById('branchEmail').value.trim()
+    };
+
+    // ✅ Call backend PUT /api/branches/:id
+    api.updateBranch(id, branchData)
+        .then(() => {
+            // Close modal
+            const modalElement = document.getElementById('addBranchModal');
+            const modalInstance = bootstrap.Modal.getInstance(modalElement);
+            if (modalInstance) modalInstance.hide();
+
+            // Reset form
+            document.getElementById('branchForm').reset();
+
+            // Reset save button
+            const saveBtn = document.getElementById('saveBranchBtn');
+            saveBtn.textContent = 'Save Branch';
+            saveBtn.onclick = saveBranch;
+
+            // Show notification
+            showNotification('Branch updated successfully!', 'success');
+
+            // Update dropdowns
+            populateBranchSelectors();
+
+            // Reload branches and dashboard
+            loadBranches();
+            loadDashboard();
+        })
+        .catch(error => {
+            console.error('Error updating branch:', error);
+            showNotification('Failed to update branch', 'error');
+        });
+}
+
+
+
         // Delete branch
         function deleteBranch(id) {
             if (confirm('Are you sure you want to delete this branch? This will also delete all sales data for this branch.')) {
@@ -3268,4 +3546,3 @@ if (existingChart) existingChart.destroy();
     </script>
 </body>
 </html>
-
