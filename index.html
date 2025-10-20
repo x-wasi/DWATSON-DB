@@ -3428,6 +3428,8 @@ function updateBranch(id) {
         email: document.getElementById('branchEmail').value.trim()
     };
 
+    console.log("📤 Sending branch data:", branchData);
+
     // ✅ Call backend PUT /api/branches/:id
     api.updateBranch(id, branchData)
         .then(() => {
