@@ -227,16 +227,15 @@ app.get('/api/debug/user', authenticate, (req, res) => {
   });
 });
 
-// Reset admin user endpoint - Create or reset admin user with proper permissions
-app.post('/api/reset-admin', async (req, res) => {
+// Fix admin endpoint - Simple fix for 403 errors
+app.post('/api/fix-admin', async (req, res) => {
   try {
-    console.log('🔄 Resetting admin user...');
+    console.log('🔧 Fixing admin permissions...');
     
-    // Find or create admin group
+    // Find or create admin group with all permissions
     let adminGroup = await Group.findOne({ name: 'Admin' });
     
     if (!adminGroup) {
-      console.log('👥 Creating admin group...');
       adminGroup = new Group({
         name: 'Admin',
         description: 'System administrators with full access',
@@ -244,82 +243,77 @@ app.post('/api/reset-admin', async (req, res) => {
         isDefault: true
       });
       await adminGroup.save();
-      console.log('✅ Admin group created');
+      console.log('✅ Created Admin group');
     } else {
-      // Ensure admin group has all required permissions
-      const requiredPermissions = ['admin', 'dashboard', 'categories', 'sales', 'reports', 'branches', 'groups', 'users', 'settings'];
-      const currentPermissions = adminGroup.permissions || [];
-      
-      // Add any missing permissions
-      let updated = false;
-      requiredPermissions.forEach(perm => {
-        if (!currentPermissions.includes(perm)) {
-          currentPermissions.push(perm);
-          updated = true;
-        }
-      });
-      
-      if (updated) {
-        adminGroup.permissions = currentPermissions;
-        await adminGroup.save();
-        console.log('✅ Admin group permissions updated');
-      }
+      // Make sure it has all permissions
+      adminGroup.permissions = ['admin', 'dashboard', 'categories', 'sales', 'reports', 'branches', 'groups', 'users', 'settings'];
+      await adminGroup.save();
+      console.log('✅ Updated Admin group permissions');
     }
     
-    // Get all branches
-    const allBranches = await Branch.find();
-    const branchIds = allBranches.map(b => b._id);
+    // Update admin user
+    const adminUser = await User.findOne({ username: 'admin' });
     
-    // Find or update admin user
-    let adminUser = await User.findOne({ username: 'admin' });
-    
-    if (!adminUser) {
-      console.log('👤 Creating admin user...');
-      const salt = await bcrypt.genSalt(10);
-      const hashedPassword = await bcrypt.hash('admin123', salt);
-      
-      adminUser = new User({
-        username: 'admin',
-        fullName: 'System Administrator',
-        email: 'admin@dwatson.com',
-        password: hashedPassword,
-        groupId: adminGroup._id,
-        branches: branchIds
-      });
-      
-      await adminUser.save();
-      console.log('✅ Admin user created');
-    } else {
-      // Update existing admin user
+    if (adminUser) {
       adminUser.groupId = adminGroup._id;
-      adminUser.branches = branchIds;
       adminUser.isActive = true;
-      
-      // Update password if provided in request
-      if (req.body.password) {
-        const salt = await bcrypt.genSalt(10);
-        adminUser.password = await bcrypt.hash(req.body.password, salt);
-      }
-      
       await adminUser.save();
-      console.log('✅ Admin user updated');
+      console.log('✅ Updated admin user');
+      
+      res.json({ 
+        success: true, 
+        message: 'Admin fixed successfully! Please log out and log back in.',
+        permissions: adminGroup.permissions
+      });
+    } else {
+      res.status(404).json({ error: 'Admin user not found' });
+    }
+  } catch (error) {
+    console.error('❌ Fix failed:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Create new admin endpoint - Backup solution
+app.post('/api/create-new-admin', async (req, res) => {
+  try {
+    console.log('🔧 Creating new admin user...');
+    
+    // Find or create admin group
+    let adminGroup = await Group.findOne({ name: 'Admin' });
+    
+    if (!adminGroup) {
+      adminGroup = new Group({
+        name: 'Admin',
+        description: 'System administrators with full access',
+        permissions: ['admin', 'dashboard', 'categories', 'sales', 'reports', 'branches', 'groups', 'users', 'settings'],
+        isDefault: true
+      });
+      await adminGroup.save();
     }
     
-    // Verify the admin user was created/updated correctly
-    const verifiedUser = await User.findById(adminUser._id).populate('groupId');
-    console.log('✅ Verified admin user:', JSON.stringify(verifiedUser, null, 2));
+    // Create new admin user
+    const salt = await bcrypt.genSalt(10);
+    const hashedPassword = await bcrypt.hash('superadmin123', salt);
+    
+    const newAdmin = new User({
+      username: 'superadmin',
+      fullName: 'Super Administrator',
+      email: 'superadmin@dwatson.com',
+      password: hashedPassword,
+      groupId: adminGroup._id,
+      branches: [] // Will get all branches
+    });
+    
+    await newAdmin.save();
     
     res.json({ 
       success: true, 
-      message: 'Admin user reset successfully',
-      user: {
-        username: verifiedUser.username,
-        fullName: verifiedUser.fullName,
-        permissions: verifiedUser.groupId.permissions
-      }
+      message: 'New admin user created',
+      username: 'superadmin',
+      password: 'superadmin123'
     });
   } catch (error) {
-    console.error('❌ Error resetting admin user:', error);
     res.status(500).json({ error: error.message });
   }
 });
@@ -1277,7 +1271,8 @@ mongoose.connection.once('open', () => {
     console.log('💰 Sales: GET /api/sales');
     console.log('⚙️ Settings: GET /api/settings');
     console.log('🔍 Debug: GET /api/debug/user');
-    console.log('🔄 Reset Admin: POST /api/reset-admin');
+    console.log('🔧 Fix Admin: POST /api/fix-admin');
+    console.log('🆕 Create New Admin: POST /api/create-new-admin');
     console.log('🎉 ==========================================');
   });
 });
