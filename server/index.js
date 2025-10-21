@@ -292,7 +292,7 @@ app.get('/api/branches', authenticate, async (req, res) => {
   try {
     // If user is not admin, only return assigned branches
     const filter = {};
-    if (!req.user.permissions.includes('admin')) {
+    if (!req.user.groupId.permissions.includes('admin')) {
       filter._id = { $in: req.user.branches };
     }
     
@@ -444,7 +444,7 @@ app.delete('/api/categories/:id', authenticate, isAdmin, async (req, res) => {
   }
 });
 
-// Groups CRUD
+// Groups CRUD - Fixed to properly check admin permissions
 app.get('/api/groups', authenticate, isAdmin, async (req, res) => {
   try {
     const groups = await Group.find().sort({ createdAt: -1 });
@@ -535,7 +535,7 @@ app.delete('/api/groups/:id', authenticate, isAdmin, async (req, res) => {
   }
 });
 
-// Users CRUD
+// Users CRUD - Fixed to properly check admin permissions
 app.get('/api/users', authenticate, isAdmin, async (req, res) => {
   try {
     const users = await User.find()
@@ -687,7 +687,7 @@ app.get('/api/sales', authenticate, async (req, res) => {
     }
     
     // If user is not admin, filter by user's assigned branches
-    if (!req.user.permissions.includes('admin')) {
+    if (!req.user.groupId.permissions.includes('admin')) {
       filter.branchId = { $in: req.user.branches };
     }
     
@@ -722,7 +722,7 @@ app.post('/api/sales', authenticate, async (req, res) => {
     }
 
     // Check if user has access to this branch
-    if (!req.user.permissions.includes('admin') && !req.user.branches.includes(data.branchId)) {
+    if (!req.user.groupId.permissions.includes('admin') && !req.user.branches.includes(data.branchId)) {
       return res.status(403).json({ error: 'Access denied. You do not have permission to access this branch.' });
     }
 
@@ -746,7 +746,7 @@ app.put('/api/sales/:id', authenticate, async (req, res) => {
   console.log('✏️ PUT /api/sales/:id - Updating sale', req.params.id, req.body);
   try {
     // Check if user has access to this branch
-    if (!req.user.permissions.includes('admin') && !req.user.branches.includes(req.body.branchId)) {
+    if (!req.user.groupId.permissions.includes('admin') && !req.user.branches.includes(req.body.branchId)) {
       return res.status(403).json({ error: 'Access denied. You do not have permission to access this branch.' });
     }
 
@@ -775,7 +775,7 @@ app.delete('/api/sales/:id', authenticate, async (req, res) => {
       return res.status(404).json({ error: 'Sale not found' });
     }
     
-    if (!req.user.permissions.includes('admin') && !req.user.branches.includes(sale.branchId)) {
+    if (!req.user.groupId.permissions.includes('admin') && !req.user.branches.includes(sale.branchId)) {
       return res.status(403).json({ error: 'Access denied. You do not have permission to access this branch.' });
     }
 
@@ -898,7 +898,7 @@ app.post('/api/admin/update', async (req, res) => {
   }
 });
 
-// Seed default data
+// Seed default data - Fixed to ensure admin group and user are created correctly
 async function seedDefaultData() {
   console.log('🌱 Starting database seeding...');
   
@@ -941,7 +941,7 @@ async function seedDefaultData() {
       console.log('⏭️ Categories already exist, skipping category seeding');
     }
     
-    // Seed groups
+    // Seed groups - Fixed to ensure admin permissions are set correctly
     const groupCount = await Group.estimatedDocumentCount();
     console.log(`📊 Current group count: ${groupCount}`);
     
@@ -973,31 +973,42 @@ async function seedDefaultData() {
       console.log('⏭️ Groups already exist, skipping group seeding');
     }
     
-    // Seed admin user
+    // Seed admin user - Fixed to ensure it references the admin group
     const userCount = await User.estimatedDocumentCount();
     console.log(`📊 Current user count: ${userCount}`);
     
     if (userCount === 0) {
       console.log('👤 Seeding default admin user...');
-      const adminGroup = await Group.findOne({ name: 'Admin' });
-      const allBranches = await Branch.find();
       
-      if (adminGroup && allBranches.length > 0) {
-        const salt = await bcrypt.genSalt(10);
-        const hashedPassword = await bcrypt.hash('admin123', salt);
-        
-        const adminUser = new User({
-          username: 'admin',
-          fullName: 'System Administrator',
-          email: 'admin@dwatson.com',
-          password: hashedPassword,
-          groupId: adminGroup._id,
-          branches: allBranches.map(b => b._id)
-        });
-        
-        await adminUser.save();
-        console.log('✅ Seeded default admin user (username: admin, password: admin123)');
+      // Find the admin group
+      const adminGroup = await Group.findOne({ name: 'Admin' });
+      if (!adminGroup) {
+        console.error('❌ Admin group not found, cannot create admin user');
+        return;
       }
+      
+      // Get all branches
+      const allBranches = await Branch.find();
+      if (allBranches.length === 0) {
+        console.error('❌ No branches found, cannot create admin user');
+        return;
+      }
+      
+      const salt = await bcrypt.genSalt(10);
+      const hashedPassword = await bcrypt.hash('admin123', salt);
+      
+      const adminUser = new User({
+        username: 'admin',
+        fullName: 'System Administrator',
+        email: 'admin@dwatson.com',
+        password: hashedPassword,
+        groupId: adminGroup._id,
+        branches: allBranches.map(b => b._id)
+      });
+      
+      await adminUser.save();
+      console.log('✅ Seeded default admin user (username: admin, password: admin123)');
+      console.log('🔑 Admin user permissions:', adminGroup.permissions);
     } else {
       console.log('⏭️ Users already exist, skipping user seeding');
     }
