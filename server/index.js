@@ -135,41 +135,97 @@ const Settings = mongoose.model('Settings', SettingsSchema);
 // JWT Secret
 const JWT_SECRET = process.env.JWT_SECRET || 'pharmacy_sales_secret_key';
 
-// Authentication Middleware
+// Authentication Middleware - Enhanced with debugging
 const authenticate = async (req, res, next) => {
   try {
     const token = req.header('Authorization')?.replace('Bearer ', '');
     
     if (!token) {
+      console.log('❌ Authentication failed: No token provided');
       return res.status(401).json({ error: 'Access denied. No token provided.' });
     }
     
     const decoded = jwt.verify(token, JWT_SECRET);
-    const user = await User.findById(decoded.id).populate('groupId');
+    console.log('🔍 Decoded token:', decoded);
     
-    if (!user || !user.isActive) {
+    const user = await User.findById(decoded.id).populate('groupId');
+    console.log('🔍 User from DB:', JSON.stringify(user, null, 2));
+    
+    if (!user) {
+      console.log('❌ Authentication failed: User not found in database');
+      return res.status(401).json({ error: 'Invalid token or user not found.' });
+    }
+    
+    if (!user.isActive) {
+      console.log('❌ Authentication failed: User is not active');
       return res.status(401).json({ error: 'Invalid token or inactive user.' });
     }
+    
+    // Ensure user has group information
+    if (!user.groupId) {
+      console.log('❌ Authentication failed: User has no group assigned');
+      return res.status(401).json({ error: 'User has no group assigned.' });
+    }
+    
+    // Ensure group has permissions
+    if (!user.groupId.permissions || !Array.isArray(user.groupId.permissions)) {
+      console.log('❌ Authentication failed: Group has no permissions defined');
+      return res.status(401).json({ error: 'Group has no permissions defined.' });
+    }
+    
+    console.log('🔍 User permissions:', user.groupId.permissions);
     
     req.user = user;
     next();
   } catch (error) {
+    console.error('❌ Authentication error:', error);
     res.status(401).json({ error: 'Invalid token.' });
   }
 };
 
-// Admin Middleware - FIXED
+// Admin Middleware - Enhanced with debugging
 const isAdmin = (req, res, next) => {
+  console.log('🔍 Checking admin permissions...');
+  console.log('🔍 User object:', JSON.stringify(req.user, null, 2));
+  
+  // Check if user exists
+  if (!req.user) {
+    console.log('❌ Admin check failed: No user found in request');
+    return res.status(401).json({ error: 'Access denied. No user found.' });
+  }
+  
+  // Check if user has group information
+  if (!req.user.groupId) {
+    console.log('❌ Admin check failed: No group information found for user');
+    return res.status(403).json({ error: 'Access denied. User has no group assigned.' });
+  }
+  
+  // Check if group has permissions
+  if (!req.user.groupId.permissions || !Array.isArray(req.user.groupId.permissions)) {
+    console.log('❌ Admin check failed: No permissions found for group');
+    return res.status(403).json({ error: 'Access denied. Group has no permissions defined.' });
+  }
+  
+  console.log('🔍 User permissions:', req.user.groupId.permissions);
+  
   // Check if user has admin permission
-  if (!req.user || !req.user.groupId || !req.user.groupId.permissions) {
+  if (!req.user.groupId.permissions.includes('admin')) {
+    console.log('❌ Admin check failed: User does not have admin permission');
     return res.status(403).json({ error: 'Access denied. Admin privileges required.' });
   }
   
-  if (!req.user.groupId.permissions.includes('admin')) {
-    return res.status(403).json({ error: 'Access denied. Admin privileges required.' });
-  }
+  console.log('✅ Admin permission check passed');
   next();
 };
+
+// Debug endpoint - Check user permissions
+app.get('/api/debug/user', authenticate, (req, res) => {
+  res.json({
+    user: req.user,
+    permissions: req.user.groupId.permissions,
+    isAdmin: req.user.groupId.permissions.includes('admin')
+  });
+});
 
 // Health endpoint
 app.get('/api/health', (req, res) => {
@@ -189,7 +245,7 @@ app.get('/api/health', (req, res) => {
   res.json(healthData);
 });
 
-// Authentication Routes
+// Authentication Routes - Enhanced
 app.post('/api/auth/login', async (req, res) => {
   try {
     const { username, password } = req.body;
@@ -199,14 +255,23 @@ app.post('/api/auth/login', async (req, res) => {
     }
     
     const user = await User.findOne({ username }).populate('groupId');
+    console.log('🔍 Login attempt for user:', username);
+    console.log('🔍 User from DB:', JSON.stringify(user, null, 2));
     
-    if (!user || !user.isActive) {
+    if (!user) {
+      console.log('❌ Login failed: User not found');
+      return res.status(401).json({ error: 'Invalid credentials' });
+    }
+    
+    if (!user.isActive) {
+      console.log('❌ Login failed: User is not active');
       return res.status(401).json({ error: 'Invalid credentials' });
     }
     
     const isMatch = await bcrypt.compare(password, user.password);
     
     if (!isMatch) {
+      console.log('❌ Login failed: Password does not match');
       return res.status(401).json({ error: 'Invalid credentials' });
     }
     
@@ -214,22 +279,26 @@ app.post('/api/auth/login', async (req, res) => {
     user.lastLogin = new Date();
     await user.save();
     
+    // Fetch the user again to ensure we have the latest data
+    const updatedUser = await User.findById(user._id).populate('groupId');
+    console.log('🔍 Updated user with group info:', JSON.stringify(updatedUser, null, 2));
+    
     const token = jwt.sign({ id: user._id }, JWT_SECRET, { expiresIn: '1d' });
     
     res.json({
       token,
       user: {
-        id: user._id,
-        username: user.username,
-        fullName: user.fullName,
-        email: user.email,
-        groupId: user.groupId,
-        branches: user.branches,
-        permissions: user.groupId.permissions
+        id: updatedUser._id,
+        username: updatedUser.username,
+        fullName: updatedUser.fullName,
+        email: updatedUser.email,
+        groupId: updatedUser.groupId,
+        branches: updatedUser.branches,
+        permissions: updatedUser.groupId.permissions
       }
     });
   } catch (error) {
-    console.error('Login error:', error);
+    console.error('❌ Login error:', error);
     res.status(500).json({ error: 'Server error' });
   }
 });
@@ -240,7 +309,10 @@ app.post('/api/auth/logout', authenticate, (req, res) => {
 
 app.get('/api/auth/me', authenticate, async (req, res) => {
   try {
+    // Fetch the user again to ensure we have the latest data
     const user = await User.findById(req.user._id).populate('groupId');
+    console.log('🔍 /api/auth/me user:', JSON.stringify(user, null, 2));
+    
     res.json({
       id: user._id,
       username: user.username,
@@ -251,7 +323,7 @@ app.get('/api/auth/me', authenticate, async (req, res) => {
       permissions: user.groupId.permissions
     });
   } catch (error) {
-    console.error('Get user error:', error);
+    console.error('❌ Get user error:', error);
     res.status(500).json({ error: 'Server error' });
   }
 });
@@ -451,11 +523,13 @@ app.delete('/api/categories/:id', authenticate, isAdmin, async (req, res) => {
 
 // Groups CRUD - FIXED
 app.get('/api/groups', authenticate, isAdmin, async (req, res) => {
+  console.log('👥 GET /api/groups - Fetching all groups');
   try {
     const groups = await Group.find().sort({ createdAt: -1 });
+    console.log(`✅ Found ${groups.length} groups`);
     res.json(groups);
   } catch (error) {
-    console.error('Error fetching groups:', error);
+    console.error('❌ Error fetching groups:', error);
     res.status(500).json({ error: error.message });
   }
 });
@@ -542,13 +616,15 @@ app.delete('/api/groups/:id', authenticate, isAdmin, async (req, res) => {
 
 // Users CRUD - FIXED
 app.get('/api/users', authenticate, isAdmin, async (req, res) => {
+  console.log('👤 GET /api/users - Fetching all users');
   try {
     const users = await User.find()
       .populate('groupId', 'name permissions')
       .sort({ createdAt: -1 });
+    console.log(`✅ Found ${users.length} users`);
     res.json(users);
   } catch (error) {
-    console.error('Error fetching users:', error);
+    console.error('❌ Error fetching users:', error);
     res.status(500).json({ error: error.message });
   }
 });
@@ -974,8 +1050,32 @@ async function seedDefaultData() {
       ];
       await Group.insertMany(defaultGroups);
       console.log('✅ Seeded 3 default groups');
+      
+      // Verify admin group was created correctly
+      const adminGroup = await Group.findOne({ name: 'Admin' });
+      if (adminGroup) {
+        console.log('✅ Admin group created successfully with permissions:', adminGroup.permissions);
+      } else {
+        console.error('❌ Admin group not found after creation');
+      }
     } else {
       console.log('⏭️ Groups already exist, skipping group seeding');
+      
+      // Check if admin group exists and has correct permissions
+      const adminGroup = await Group.findOne({ name: 'Admin' });
+      if (adminGroup) {
+        console.log('✅ Admin group found with permissions:', adminGroup.permissions);
+        
+        // Ensure admin group has admin permission
+        if (!adminGroup.permissions.includes('admin')) {
+          console.log('⚠️ Admin group missing admin permission, updating...');
+          adminGroup.permissions.push('admin');
+          await adminGroup.save();
+          console.log('✅ Admin group updated with admin permission');
+        }
+      } else {
+        console.error('❌ Admin group not found');
+      }
     }
     
     // Seed admin user - FIXED to ensure it references the admin group
@@ -1016,8 +1116,33 @@ async function seedDefaultData() {
       await adminUser.save();
       console.log('✅ Seeded default admin user (username: admin, password: admin123)');
       console.log('🔑 Admin user group ID:', adminUser.groupId);
+      
+      // Verify admin user was created correctly
+      const createdUser = await User.findById(adminUser._id).populate('groupId');
+      if (createdUser) {
+        console.log('✅ Admin user created successfully with permissions:', createdUser.groupId.permissions);
+      } else {
+        console.error('❌ Admin user not found after creation');
+      }
     } else {
       console.log('⏭️ Users already exist, skipping user seeding');
+      
+      // Check if admin user exists and has correct group
+      const adminUser = await User.findOne({ username: 'admin' }).populate('groupId');
+      if (adminUser) {
+        console.log('✅ Admin user found with group:', adminUser.groupId.name);
+        console.log('✅ Admin user permissions:', adminUser.groupId.permissions);
+        
+        // Ensure admin user has admin permission
+        if (!adminUser.groupId.permissions.includes('admin')) {
+          console.log('⚠️ Admin user group missing admin permission, updating...');
+          adminUser.groupId.permissions.push('admin');
+          await adminUser.groupId.save();
+          console.log('✅ Admin user group updated with admin permission');
+        }
+      } else {
+        console.error('❌ Admin user not found');
+      }
     }
     
     console.log('🎉 Database seeding completed!');
@@ -1054,6 +1179,7 @@ mongoose.connection.once('open', () => {
     console.log('👤 Users: GET /api/users');
     console.log('💰 Sales: GET /api/sales');
     console.log('⚙️ Settings: GET /api/settings');
+    console.log('🔍 Debug: GET /api/debug/user');
     console.log('🎉 ==========================================');
   });
 });
