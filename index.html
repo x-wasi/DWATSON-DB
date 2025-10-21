@@ -2071,12 +2071,22 @@
                     if (!response.ok) {
                         let errorMessage = `HTTP error! status: ${response.status}`;
                         try {
+                            // Try to parse as JSON first
                             const errorResponse = await response.json();
                             if (errorResponse && errorResponse.error) {
                                 errorMessage = errorResponse.error;
                             }
                         } catch (e) {
-                            // Ignore if response is not JSON
+                            // If JSON parsing fails, get text response
+                            const text = await response.text();
+                            console.error('Error response (text):', text);
+                            
+                            // Check if it's HTML (likely 404 page)
+                            if (text.includes('<!DOCTYPE') || text.includes('<html')) {
+                                errorMessage = `API endpoint not found: ${endpoint}`;
+                            } else {
+                                errorMessage = text || `Request failed: ${response.status}`;
+                            }
                         }
                         throw new Error(errorMessage);
                     }
@@ -2118,17 +2128,31 @@
             }
             
             async signup(userData) {
-                const response = await this.request('/auth/signup', {
-                    method: 'POST',
-                    body: JSON.stringify(userData)
-                });
-                
-                if (response.token) {
-                    this.setToken(response.token);
-                    return response;
+                try {
+                    const response = await this.request('/auth/signup', {
+                        method: 'POST',
+                        body: JSON.stringify(userData)
+                    });
+                    
+                    if (response.token) {
+                        this.setToken(response.token);
+                        return response;
+                    }
+                    
+                    throw new Error('Signup failed: No token received');
+                } catch (error) {
+                    // Enhanced error handling for signup
+                    console.error('Signup API error:', error);
+                    
+                    // Check if it's a network error or server error
+                    if (error.message.includes('API endpoint not found')) {
+                        throw new Error('Signup service is currently unavailable. Please try again later.');
+                    } else if (error.message.includes('Failed to fetch')) {
+                        throw new Error('Network error. Please check your connection and try again.');
+                    }
+                    
+                    throw error;
                 }
-                
-                throw new Error('Signup failed: No token received');
             }
             
             async getCurrentUser() {
