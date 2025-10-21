@@ -418,7 +418,55 @@ app.get('/api/auth/me', authenticate, async (req, res) => {
     res.status(500).json({ error: 'Server error' });
   }
 });
-
+// Add this endpoint to create a fresh admin user
+app.post('/api/create-fresh-admin', async (req, res) => {
+  try {
+    console.log('Creating fresh admin user...');
+    
+    // Find or create admin group
+    let adminGroup = await Group.findOne({ name: 'Admin' });
+    
+    if (!adminGroup) {
+      adminGroup = new Group({
+        name: 'Admin',
+        description: 'System administrators with full access',
+        permissions: ['admin', 'dashboard', 'categories', 'sales', 'reports', 'branches', 'groups', 'users', 'settings'],
+        isDefault: true
+      });
+      await adminGroup.save();
+      console.log('Admin group created');
+    }
+    
+    // Delete existing admin users to avoid conflicts
+    await User.deleteMany({ username: { $in: ['admin', 'superadmin', 'myadmin'] } });
+    
+    // Create new admin user
+    const salt = await bcrypt.genSalt(10);
+    const hashedPassword = await bcrypt.hash('myadmin123', salt);
+    
+    const adminUser = new User({
+      username: 'myadmin',
+      fullName: 'My Administrator',
+      email: 'myadmin@dwatson.com',
+      password: hashedPassword,
+      groupId: adminGroup._id,
+      branches: []
+    });
+    
+    await adminUser.save();
+    console.log('Admin user created');
+    
+    res.json({ 
+      success: true, 
+      message: 'Fresh admin user created successfully',
+      username: 'myadmin',
+      password: 'myadmin123'
+    });
+  } catch (error) {
+    console.error('Error creating fresh admin:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
 // Settings API
 app.get('/api/settings', authenticate, async (req, res) => {
   try {
@@ -1292,3 +1340,4 @@ app.use('*', (req, res) => {
     res.sendFile(path.join(clientDir, 'index.html'));
   }
 });
+
