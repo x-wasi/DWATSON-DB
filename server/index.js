@@ -227,6 +227,103 @@ app.get('/api/debug/user', authenticate, (req, res) => {
   });
 });
 
+// Reset admin user endpoint - Create or reset admin user with proper permissions
+app.post('/api/reset-admin', async (req, res) => {
+  try {
+    console.log('🔄 Resetting admin user...');
+    
+    // Find or create admin group
+    let adminGroup = await Group.findOne({ name: 'Admin' });
+    
+    if (!adminGroup) {
+      console.log('👥 Creating admin group...');
+      adminGroup = new Group({
+        name: 'Admin',
+        description: 'System administrators with full access',
+        permissions: ['admin', 'dashboard', 'categories', 'sales', 'reports', 'branches', 'groups', 'users', 'settings'],
+        isDefault: true
+      });
+      await adminGroup.save();
+      console.log('✅ Admin group created');
+    } else {
+      // Ensure admin group has all required permissions
+      const requiredPermissions = ['admin', 'dashboard', 'categories', 'sales', 'reports', 'branches', 'groups', 'users', 'settings'];
+      const currentPermissions = adminGroup.permissions || [];
+      
+      // Add any missing permissions
+      let updated = false;
+      requiredPermissions.forEach(perm => {
+        if (!currentPermissions.includes(perm)) {
+          currentPermissions.push(perm);
+          updated = true;
+        }
+      });
+      
+      if (updated) {
+        adminGroup.permissions = currentPermissions;
+        await adminGroup.save();
+        console.log('✅ Admin group permissions updated');
+      }
+    }
+    
+    // Get all branches
+    const allBranches = await Branch.find();
+    const branchIds = allBranches.map(b => b._id);
+    
+    // Find or update admin user
+    let adminUser = await User.findOne({ username: 'admin' });
+    
+    if (!adminUser) {
+      console.log('👤 Creating admin user...');
+      const salt = await bcrypt.genSalt(10);
+      const hashedPassword = await bcrypt.hash('admin123', salt);
+      
+      adminUser = new User({
+        username: 'admin',
+        fullName: 'System Administrator',
+        email: 'admin@dwatson.com',
+        password: hashedPassword,
+        groupId: adminGroup._id,
+        branches: branchIds
+      });
+      
+      await adminUser.save();
+      console.log('✅ Admin user created');
+    } else {
+      // Update existing admin user
+      adminUser.groupId = adminGroup._id;
+      adminUser.branches = branchIds;
+      adminUser.isActive = true;
+      
+      // Update password if provided in request
+      if (req.body.password) {
+        const salt = await bcrypt.genSalt(10);
+        adminUser.password = await bcrypt.hash(req.body.password, salt);
+      }
+      
+      await adminUser.save();
+      console.log('✅ Admin user updated');
+    }
+    
+    // Verify the admin user was created/updated correctly
+    const verifiedUser = await User.findById(adminUser._id).populate('groupId');
+    console.log('✅ Verified admin user:', JSON.stringify(verifiedUser, null, 2));
+    
+    res.json({ 
+      success: true, 
+      message: 'Admin user reset successfully',
+      user: {
+        username: verifiedUser.username,
+        fullName: verifiedUser.fullName,
+        permissions: verifiedUser.groupId.permissions
+      }
+    });
+  } catch (error) {
+    console.error('❌ Error resetting admin user:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
 // Health endpoint
 app.get('/api/health', (req, res) => {
   const healthData = { 
@@ -1180,6 +1277,7 @@ mongoose.connection.once('open', () => {
     console.log('💰 Sales: GET /api/sales');
     console.log('⚙️ Settings: GET /api/settings');
     console.log('🔍 Debug: GET /api/debug/user');
+    console.log('🔄 Reset Admin: POST /api/reset-admin');
     console.log('🎉 ==========================================');
   });
 });
