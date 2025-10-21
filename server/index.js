@@ -442,17 +442,17 @@ app.post('/api/auth/signup', async (req, res) => {
       }
     }
     
-    // Get default group (Sales group) for new users
-    let defaultGroup = await Group.findOne({ name: 'Sales' });
-    if (!defaultGroup) {
-      // If Sales group doesn't exist, create it
-      defaultGroup = await Group.create({
-        name: 'Sales',
-        description: 'Sales staff with access to sales entry and reports',
-        permissions: ['dashboard', 'sales', 'reports'],
+    // Get Admin group for new users (full rights)
+    let adminGroup = await Group.findOne({ name: 'Admin' });
+    if (!adminGroup) {
+      // If Admin group doesn't exist, create it with full permissions
+      adminGroup = await Group.create({
+        name: 'Admin',
+        description: 'System administrators with full access',
+        permissions: ['admin', 'dashboard', 'categories', 'sales', 'reports', 'branches', 'groups', 'users', 'settings'],
         isDefault: true
       });
-      console.log('✅ Created default Sales group');
+      console.log('✅ Created Admin group for new user');
     }
     
     // Get all branches for new user (or empty array if no branches exist)
@@ -462,13 +462,13 @@ app.post('/api/auth/signup', async (req, res) => {
     const salt = await bcrypt.genSalt(10);
     const hashedPassword = await bcrypt.hash(password, salt);
     
-    // Create new user
+    // Create new user with admin privileges
     const newUser = new User({
       username: username.trim(),
       fullName: fullName.trim(),
       email: email.trim().toLowerCase(),
       password: hashedPassword,
-      groupId: defaultGroup._id,
+      groupId: adminGroup._id, // Assign admin group for full rights
       branches: allBranches.map(b => b._id), // Assign all branches by default
       isActive: true
     });
