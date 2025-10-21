@@ -133,7 +133,7 @@ const Sale = mongoose.model('Sale', SaleSchema);
 const Settings = mongoose.model('Settings', SettingsSchema);
 
 // JWT Secret
-const JWT_SECRET = process.env.JWT_SECRET || 'pharmacy_sales_secret_key';
+const JWT_SECRET = process.env.JWT_SECRET || 'f56f4d1a70c09d6efc9e45b269f86f20deedabc22a12c85e841946fad5ace2f19c611a3069c8cbe1b9b54cd4dbc2649f79aa4c3880b0b46a640a3fd232049273';
 
 // Authentication Middleware - Enhanced with debugging
 const authenticate = async (req, res, next) => {
@@ -1199,3 +1199,4 @@ app.use('*', (req, res) => {
     res.sendFile(path.join(clientDir, 'index.html'));
   }
 });
+
