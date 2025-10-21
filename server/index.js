@@ -467,6 +467,56 @@ app.post('/api/create-fresh-admin', async (req, res) => {
     res.status(500).json({ error: error.message });
   }
 });
+// Simple HTML page to trigger admin creation
+app.get('/create-admin-page', (req, res) => {
+  res.send(`
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <title>Create Admin User</title>
+      <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        button { padding: 10px 15px; background: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer; }
+        #result { margin-top: 20px; padding: 10px; background: #f8f9fa; border-radius: 4px; }
+      </style>
+    </head>
+    <body>
+      <h1>Create Admin User</h1>
+      <button onclick="createAdmin()">Create Admin User</button>
+      <div id="result">Click the button to create an admin user</div>
+      
+      <script>
+        async function createAdmin() {
+          document.getElementById('result').innerHTML = 'Creating admin user...';
+          
+          try {
+            const response = await fetch('/api/create-fresh-admin', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json'
+              }
+            });
+            
+            const data = await response.json();
+            
+            if (data.success) {
+              document.getElementById('result').innerHTML = 
+                '<h3>Success!</h3>' +
+                '<p>Username: <strong>' + data.username + '</strong></p>' +
+                '<p>Password: <strong>' + data.password + '</strong></p>' +
+                '<p>Go to the <a href="/">login page</a> and use these credentials.</p>';
+            } else {
+              document.getElementById('result').innerHTML = '<p style="color: red;">Error: ' + data.error + '</p>';
+            }
+          } catch (error) {
+            document.getElementById('result').innerHTML = '<p style="color: red;">Error: ' + error.message + '</p>';
+          }
+        }
+      </script>
+    </body>
+    </html>
+  `);
+});
 // Settings API
 app.get('/api/settings', authenticate, async (req, res) => {
   try {
@@ -1340,4 +1390,5 @@ app.use('*', (req, res) => {
     res.sendFile(path.join(clientDir, 'index.html'));
   }
 });
+
 
