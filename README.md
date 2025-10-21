@@ -1,6 +1,6 @@
 
 
-[![Deploy](https://www.herokucdn.com/deploy/button.svg)](https://heroku.com/deploy?template=https://github.com/Itxxwasi/DWATSON-DB.git)
+[![Deploy](https://www.herokucdn.com/deploy/button.svg)](https://heroku.com/deploy?template=https://github.com/dwatsongroupofit-source/DWATSON-DB)
 
 Option B (CLI):
 
