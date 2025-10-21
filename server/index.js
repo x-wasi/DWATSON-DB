@@ -227,6 +227,92 @@ app.get('/api/debug/user', authenticate, (req, res) => {
   });
 });
 
+// Promote user to admin endpoint
+app.post('/api/admin/promote-user', async (req, res) => {
+  try {
+    const { username, adminPassword } = req.body;
+    
+    // Verify admin password
+    const expectedPassword = process.env.ADMIN_PASSWORD || 'admin123';
+    if (adminPassword !== expectedPassword) {
+      return res.status(403).json({ error: 'Invalid admin password' });
+    }
+    
+    if (!username) {
+      return res.status(400).json({ error: 'Username is required' });
+    }
+    
+    // Find the user
+    const user = await User.findOne({ username }).populate('groupId');
+    if (!user) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+    
+    // Find or create Admin group
+    let adminGroup = await Group.findOne({ name: 'Admin' });
+    if (!adminGroup) {
+      adminGroup = await Group.create({
+        name: 'Admin',
+        description: 'System administrators with full access',
+        permissions: ['admin', 'dashboard', 'categories', 'sales', 'reports', 'branches', 'groups', 'users', 'settings'],
+        isDefault: true
+      });
+      console.log('✅ Created Admin group');
+    }
+    
+    // Update user to Admin group
+    user.groupId = adminGroup._id;
+    await user.save();
+    
+    // Populate the updated user
+    await user.populate('groupId', 'name permissions');
+    
+    console.log(`✅ User ${username} promoted to admin successfully`);
+    
+    res.json({
+      message: `User ${username} has been promoted to admin`,
+      user: {
+        id: user._id,
+        username: user.username,
+        fullName: user.fullName,
+        email: user.email,
+        groupId: user.groupId,
+        permissions: user.groupId.permissions
+      }
+    });
+    
+  } catch (error) {
+    console.error('❌ Error promoting user to admin:', error);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
+// Get user by username endpoint
+app.get('/api/users/username/:username', async (req, res) => {
+  try {
+    const { username } = req.params;
+    
+    const user = await User.findOne({ username }).populate('groupId', 'name permissions');
+    if (!user) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+    
+    res.json({
+      id: user._id,
+      username: user.username,
+      fullName: user.fullName,
+      email: user.email,
+      groupId: user.groupId,
+      permissions: user.groupId.permissions,
+      isActive: user.isActive
+    });
+    
+  } catch (error) {
+    console.error('❌ Error fetching user:', error);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
 // Health endpoint
 app.get('/api/health', (req, res) => {
   const healthData = { 
