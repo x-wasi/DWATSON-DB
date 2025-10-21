@@ -2876,63 +2876,37 @@
                 }
             });
             
-            // Add user button
-            document.getElementById('addUserBtn').addEventListener('click', function() {
-                // Check if user is admin
-                if (!isAdmin()) {
-                    showNotification('You need admin privileges to create users', 'error');
-                    return;
-                }
-                
-                // Clear form
-                document.getElementById('userForm').reset();
-                document.getElementById('userError').classList.add('d-none');
-                
-                // Reset save button to create mode
-                const saveBtn = document.getElementById('saveUserBtn');
-                saveBtn.textContent = 'Save User';
-                saveBtn.onclick = function() {
-                    if (document.getElementById('userForm').checkValidity()) {
-                        saveUser();
-                    } else {
-                        document.getElementById('userForm').reportValidity();
-                    }
-                };
-                
-                // Populate group selector
-                populateGroupSelectorInUserModal();
-                
-                // Populate branch selector
-                populateBranchSelectorInUserModal();
-                
-                const modal = new bootstrap.Modal(document.getElementById('addUserModal'));
-                modal.show();
-            });
-            
-            // Save user button
-            document.getElementById('saveUserBtn').addEventListener('click', function() {
-                if (document.getElementById('userForm').checkValidity()) {
-                    saveUser();
-                } else {
-                    document.getElementById('userForm').reportValidity();
-                }
-            });
-            
-            // Promote user button
-            document.getElementById('promoteUserBtn').addEventListener('click', function() {
-                // Check if user is admin
-                if (!isAdmin()) {
-                    showNotification('You need admin privileges to promote users', 'error');
-                    return;
-                }
-                
-                // Clear form
-                document.getElementById('promoteUserForm').reset();
-                document.getElementById('promoteUserError').classList.add('d-none');
-                
-                const modal = new bootstrap.Modal(document.getElementById('promoteUserModal'));
-                modal.show();
-            });
+    // Add user button
+document.getElementById('addUserBtn').addEventListener('click', function() {
+    // Check if user is admin
+    if (!isAdmin()) {
+        showNotification('You need admin privileges to create users', 'error');
+        return;
+    }
+    
+    // Clear form
+    document.getElementById('userForm').reset();
+    
+    // Reset save button to create mode
+    const saveBtn = document.getElementById('saveUserBtn');
+    saveBtn.textContent = 'Save User';
+    saveBtn.onclick = function() {
+        if (document.getElementById('userForm').checkValidity()) {
+            saveUser();
+        } else {
+            document.getElementById('userForm').reportValidity();
+        }
+    };
+    
+    // Populate group selector
+    populateGroupSelectorInUserModal();
+    
+    // Populate branch selector
+    populateBranchSelectorInUserModal();
+    
+    const modal = new bootstrap.Modal(document.getElementById('addUserModal'));
+    modal.show();
+});
             
             // Confirm promote user button
             document.getElementById('confirmPromoteBtn').addEventListener('click', function() {
@@ -4863,44 +4837,49 @@
             }
         }
         
-        // Edit user
-        function editUser(id) {
-            // Check if user is admin
-            if (!isAdmin()) {
-                showNotification('You need admin privileges to edit users', 'error');
-                return;
-            }
+       // Edit user
+function editUser(id) {
+    // Check if user is admin
+    if (!isAdmin()) {
+        showNotification('You need admin privileges to edit users', 'error');
+        return;
+    }
+    
+    api.getUsers().then(usersData => {
+        const user = usersData.find(u => u._id === id);
+        if (user) {
+            document.getElementById('userName').value = user.username;
+            document.getElementById('userFullName').value = user.fullName || '';
+            document.getElementById('userEmail').value = user.email || '';
+            document.getElementById('userPassword').value = ''; // Don't show password for security
+            document.getElementById('userGroup').value = user.groupId || '';
             
-            api.getUsers().then(usersData => {
-                const user = usersData.find(u => u._id === id);
-                if (user) {
-                    document.getElementById('userName').value = user.username;
-                    document.getElementById('userFullName').value = user.fullName || '';
-                    document.getElementById('userEmail').value = user.email || '';
-                    document.getElementById('userPassword').value = ''; // Don't show password for security
-                    document.getElementById('userGroup').value = user.groupId || '';
-                    
-                    // Set branch checkboxes
-                    document.querySelectorAll('#userBranchesSelector input[type="checkbox"]').forEach(checkbox => {
-                        checkbox.checked = user.branches && user.branches.includes(checkbox.value);
-                    });
-                    
-                    // Change save button to update
-                    const saveBtn = document.getElementById('saveUserBtn');
-                    saveBtn.textContent = 'Update User';
-                    saveBtn.onclick = function() {
-                        updateUser(id);
-                    };
-                    
-                    // Show modal
-                    const modal = new bootstrap.Modal(document.getElementById('addUserModal'));
-                    modal.show();
-                }
-            }).catch(error => {
-                console.error('Error fetching user data:', error);
-                showNotification('Failed to load user data: ' + error.message, 'error');
-            });
+            // First populate the branch selector (this creates the checkboxes)
+            populateBranchSelectorInUserModal();
+            
+            // Then set the checkboxes for the user's assigned branches
+            setTimeout(() => {
+                document.querySelectorAll('#userBranchesSelector input[type="checkbox"]').forEach(checkbox => {
+                    checkbox.checked = user.branches && user.branches.includes(checkbox.value);
+                });
+            }, 100); // Small delay to ensure DOM is updated
+            
+            // Change save button to update
+            const saveBtn = document.getElementById('saveUserBtn');
+            saveBtn.textContent = 'Update User';
+            saveBtn.onclick = function() {
+                updateUser(id);
+            };
+            
+            // Show modal
+            const modal = new bootstrap.Modal(document.getElementById('addUserModal'));
+            modal.show();
         }
+    }).catch(error => {
+        console.error('Error fetching user data:', error);
+        showNotification('Failed to load user data: ' + error.message, 'error');
+    });
+}
         
         // Update user
         function updateUser(id) {
@@ -5454,3 +5433,4 @@
     </script>
 </body>
 </html>
+
