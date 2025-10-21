@@ -183,6 +183,87 @@
             overflow-x: hidden;
         }
         
+        /* Login Section */
+        .login-section {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+            padding: 20px;
+        }
+        
+        .login-card {
+            width: 100%;
+            max-width: 400px;
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+        }
+        
+        .login-header {
+            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+            color: white;
+            padding: 20px;
+            text-align: center;
+        }
+        
+        .login-header h1 {
+            font-size: 1.8rem;
+            margin-bottom: 5px;
+        }
+        
+        .login-header p {
+            opacity: 0.8;
+            margin: 0;
+        }
+        
+        .login-body {
+            padding: 30px;
+        }
+        
+        .login-form .form-control {
+            border-radius: 5px;
+            padding: 12px 15px;
+            border: 1px solid #ddd;
+            margin-bottom: 20px;
+        }
+        
+        .login-form .form-control:focus {
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 0.2rem rgba(44, 110, 138, 0.25);
+        }
+        
+        .login-btn {
+            width: 100%;
+            padding: 12px;
+            border-radius: 5px;
+            border: none;
+            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+            color: white;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        
+        .login-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(44, 110, 138, 0.3);
+        }
+        
+        .login-footer {
+            text-align: center;
+            padding: 20px;
+            color: #666;
+            font-size: 0.9rem;
+        }
+        
+        /* Main App (hidden initially) */
+        .main-app {
+            display: none;
+        }
+        
         /* Navbar Styles */
         .navbar {
             background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
@@ -916,633 +997,663 @@
     </style>
 </head>
 <body>
-    <!-- Loading Spinner -->
-    <div class="loading-spinner" id="loadingSpinner">
-        <div class="spinner-border text-primary" role="status">
-            <span class="visually-hidden">Loading...</span>
+    <!-- Login Section -->
+    <div id="loginSection" class="login-section">
+        <div class="login-card">
+            <div class="login-header">
+                <h1>D.Watson Pharmacy</h1>
+                <p>Sales Dashboard</p>
+            </div>
+            <div class="login-body">
+                <form id="loginForm" class="login-form">
+                    <div class="mb-3">
+                        <label for="username" class="form-label">Username</label>
+                        <input type="text" class="form-control" id="username" placeholder="Enter username" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="password" class="form-label">Password</label>
+                        <input type="password" class="form-control" id="password" placeholder="Enter password" required>
+                    </div>
+                    <div id="loginError" class="alert alert-danger d-none"></div>
+                    <button type="submit" class="login-btn">Login</button>
+                </form>
+            </div>
+            <div class="login-footer">
+                <p>© 2023 D.Watson Group of Pharmacy. All rights reserved.</p>
+            </div>
         </div>
     </div>
     
-    <!-- Notification -->
-    <div class="notification" id="notification">
-        <div class="d-flex align-items-center">
-            <i class="fas fa-check-circle me-2"></i>
-            <span id="notification-message">Operation completed successfully!</span>
-        </div>
-    </div>
-    
-    <!-- Navbar -->
-    <nav class="navbar navbar-expand-lg navbar-dark no-print">
-        <div class="container-fluid">
-            <button class="mobile-menu-toggle" id="mobileMenuToggle">
-                <i class="fas fa-bars"></i>
-            </button>
-            <a class="navbar-brand" href="#">
-                <i class="fas fa-pills me-2"></i>D.Watson Pharmacy
-            </a>
-            <div class="ms-auto d-flex align-items-center">
-                <div class="dropdown">
-                    <button class="btn btn-sm btn-outline-light dropdown-toggle" type="button" id="userDropdown" data-bs-toggle="dropdown" aria-expanded="false">
-                        <i class="fas fa-user-circle me-1"></i> <span id="currentUserDisplay">Admin</span>
-                    </button>
-                    <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="userDropdown">
-                        <li><a class="dropdown-item" href="#" id="logoutBtn"><i class="fas fa-sign-out-alt me-2"></i>Logout</a></li>
-                    </ul>
-                </div>
-            </div>
-        </div>
-    </nav>
-    
-    <!-- Sidebar -->
-    <div class="sidebar no-print" id="sidebar">
-        <ul class="nav flex-column">
-            <li class="nav-item">
-                <a class="nav-link active" href="#" data-section="dashboard">
-                    <i class="fas fa-tachometer-alt"></i>Dashboard
-                </a>
-            </li>
-            <li class="nav-item">
-                <a class="nav-link" href="#" data-section="categories">
-                    <i class="fas fa-tags"></i>Categories
-                </a>
-            </li>
-            <li class="nav-item">
-                <a class="nav-link" href="#" data-section="sales">
-                    <i class="fas fa-shopping-cart"></i>Sales Entry
-                </a>
-            </li>
-            <li class="nav-item">
-                <a class="nav-link" href="#" data-section="reports">
-                    <i class="fas fa-chart-bar"></i>Reports
-                </a>
-            </li>
-            <li class="nav-item">
-                <a class="nav-link" href="#" data-section="branches">
-                    <i class="fas fa-store"></i>Branches
-                </a>
-            </li>
-            <li class="nav-item admin-only">
-                <a class="nav-link" href="#" data-section="groups">
-                    <i class="fas fa-users"></i>Groups
-                </a>
-            </li>
-            <li class="nav-item admin-only">
-                <a class="nav-link" href="#" data-section="users">
-                    <i class="fas fa-user"></i>Users
-                </a>
-            </li>
-            <li class="nav-item admin-only">
-                <a class="nav-link" href="#" data-section="settings">
-                    <i class="fas fa-cog"></i>Settings
-                </a>
-            </li>
-        </ul>
-    </div>
-    
-    <!-- Sidebar Overlay -->
-    <div class="sidebar-overlay" id="sidebarOverlay"></div>
-    
-    <!-- Main Content -->
-    <div class="main-content">
-        <!-- Dashboard Section -->
-        <div id="dashboard-section" class="content-section active">
-            <!-- Dashboard Header -->
-            <div class="dashboard-header">
-                <h1 class="dashboard-title">Sales Dashboard</h1>
-                <p class="dashboard-subtitle">Comprehensive overview of your pharmacy sales performance</p>
-            </div>
-            
-            <!-- Dashboard Tabs -->
-            <div class="dashboard-tabs">
-                <ul class="nav nav-tabs" id="dashboardTabs" role="tablist">
-                    <li class="nav-item" role="presentation">
-                        <button class="nav-link active" id="overview-tab" data-bs-toggle="tab" data-bs-target="#overview" type="button" role="tab" aria-controls="overview" aria-selected="true">Overview</button>
-                    </li>
-                    <li class="nav-item" role="presentation">
-                        <button class="nav-link" id="branch-tab" data-bs-toggle="tab" data-bs-target="#branch" type="button" role="tab" aria-controls="branch" aria-selected="false">Branch Filter</button>
-                    </li>
-                </ul>
-                <div class="tab-content" id="dashboardTabsContent">
-                    <div class="tab-pane fade show active" id="overview" role="tabpanel" aria-labelledby="overview-tab">
-                        <!-- Empty content for overview tab -->
-                    </div>
-                    <div class="tab-pane fade" id="branch" role="tabpanel" aria-labelledby="branch-tab">
-                        <div class="row mt-3">
-                            <div class="col-md-6">
-                                <label class="form-label">Select Branch</label>
-                                <select class="form-select" id="dashboardBranchSelector">
-                                    <option value="">All Branches</option>
-                                </select>
-                            </div>
-                            <div class="col-md-6 d-flex align-items-end">
-                                <button class="btn btn-primary w-100" id="applyBranchFilter">
-                                    <i class="fas fa-filter me-2"></i>Apply Filter
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            
-            <!-- Category-Wise Breakdown - Updated -->
-            <div class="mb-4">
-                <div class="d-flex justify-content-between align-items-center mb-3">
-                    <h2 class="section-title mb-0">
-                        <i class="fas fa-th-large"></i>Category-Wise Breakdown
-                    </h2>
-                    <button class="btn btn-primary" id="refreshDashboardBtn">
-                        <i class="fas fa-sync-alt me-2"></i>Refresh
-                    </button>
-                </div>
-                <div class="row" id="categoryBreakdown">
-                    <!-- Category cards will be populated dynamically -->
-                </div>
-            </div>
-            
-            <!-- Sales & Cost Trends -->
-            <div class="mb-4">
-                <h2 class="section-title">
-                    <i class="fas fa-chart-line"></i>Sales & Cost Trends
-                </h2>
-                <div class="filter-section">
-                    <div class="row g-3">
-                        <div class="col-md-4">
-                            <label class="form-label">Category</label>
-                            <select class="form-select" id="trendCategoryFilter">
-                                <option value="">All Categories</option>
-                            </select>
-                        </div>
-                        <div class="col-md-4">
-                            <label class="form-label">Time Range</label>
-                            <select class="form-select" id="trendTimeFilter">
-                                <option value="7">Last 7 Days</option>
-                                <option value="30">Last 30 Days</option>
-                                <option value="90">Last 90 Days</option>
-                                <option value="365">Last Year</option>
-                            </select>
-                        </div>
-                        <div class="col-md-4 d-flex align-items-end">
-                            <button class="btn btn-primary w-100" id="updateTrendsBtn">
-                                <i class="fas fa-sync-alt me-2"></i>Update Trends
-                            </button>
-                        </div>
-                    </div>
-                </div>
-                <div class="card">
-                    <div class="card-body">
-                        <div class="chart-container">
-                            <canvas id="trendsChart"></canvas>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            
-            <!-- Branch Summary -->
-            <div class="mb-4">
-                <h2 class="section-title">
-                    <i class="fas fa-store"></i>Branch Summary
-                </h2>
-                <div class="row" id="branchSummary">
-                    <!-- Branch cards will be populated dynamically -->
-                </div>
-                <div class="card mt-3">
-                    <div class="card-body">
-                        <div class="row text-center">
-                            <div class="col-md-4">
-                                <h3 class="text-primary" id="grandTotalSales">PKR 0</h3>
-                                <p class="mb-0">Grand Total Sales</p>
-                            </div>
-                            <div class="col-md-4">
-                                <h3 class="text-success" id="grandTotalCost">PKR 0</h3>
-                                <p class="mb-0">Grand Total Cost</p>
-                            </div>
-                            <div class="col-md-4">
-                                <h3 class="text-info" id="grandTotalProfit">PKR 0</h3>
-                                <p class="mb-0">Grand Total Profit</p>
-                            </div>
-                        </div>
-                    </div>
-                </div>
+    <!-- Main Application (Hidden Initially) -->
+    <div id="mainApp" class="main-app">
+        <!-- Loading Spinner -->
+        <div class="loading-spinner" id="loadingSpinner">
+            <div class="spinner-border text-primary" role="status">
+                <span class="visually-hidden">Loading...</span>
             </div>
         </div>
         
-        <!-- Categories Section -->
-        <div id="categories-section" class="content-section">
-            <div class="dashboard-header">
-                <h1 class="dashboard-title">Category Management</h1>
-                <p class="dashboard-subtitle">Manage your product categories</p>
-            </div>
-            
-            <div class="d-flex justify-content-between align-items-center mb-4">
-                <h2 class="section-title mb-0">
-                    <i class="fas fa-tags"></i>Categories
-                </h2>
-                <button class="btn btn-primary" id="addCategoryBtn">
-                    <i class="fas fa-plus me-2"></i>Add Category
-                </button>
-            </div>
-            
-            <div class="row" id="categoriesContainer">
-                <!-- Category cards will be populated dynamically -->
+        <!-- Notification -->
+        <div class="notification" id="notification">
+            <div class="d-flex align-items-center">
+                <i class="fas fa-check-circle me-2"></i>
+                <span id="notification-message">Operation completed successfully!</span>
             </div>
         </div>
         
-        <!-- Sales Entry Section -->
-        <div id="sales-section" class="content-section">
-            <div class="dashboard-header">
-                <h1 class="dashboard-title">Sales Entry</h1>
-                <p class="dashboard-subtitle">Enter daily sales data by category</p>
-            </div>
-            
-            <div class="d-flex justify-content-end mb-3">
-                <button class="btn btn-outline-primary" id="viewSalesListBtn">
-                    <i class="fas fa-list me-2"></i>View Sales List
+        <!-- Navbar -->
+        <nav class="navbar navbar-expand-lg navbar-dark no-print">
+            <div class="container-fluid">
+                <button class="mobile-menu-toggle" id="mobileMenuToggle">
+                    <i class="fas fa-bars"></i>
                 </button>
-            </div>
-            
-            <!-- Sales List Section (Initially Hidden) -->
-            <div id="salesListSection" style="display: none;">
-                <div class="card">
-                    <div class="card-header d-flex justify-content-between align-items-center">
-                        <h5 class="mb-0">Sales List</h5>
-                        <button class="btn btn-sm btn-secondary" id="hideSalesListBtn">
-                            <i class="fas fa-times me-1"></i>Hide
+                <a class="navbar-brand" href="#">
+                    <i class="fas fa-pills me-2"></i>D.Watson Pharmacy
+                </a>
+                <div class="ms-auto d-flex align-items-center">
+                    <div class="dropdown">
+                        <button class="btn btn-sm btn-outline-light dropdown-toggle" type="button" id="userDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+                            <i class="fas fa-user-circle me-1"></i> <span id="currentUserDisplay">Admin</span>
                         </button>
+                        <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="userDropdown">
+                            <li><a class="dropdown-item" href="#" id="logoutBtn"><i class="fas fa-sign-out-alt me-2"></i>Logout</a></li>
+                        </ul>
                     </div>
-                    <div class="card-body">
-                        <!-- Filter Section -->
-                        <div class="filter-section mb-3">
-                            <div class="row g-3">
-                                <div class="col-md-3">
-                                    <label class="form-label">From Date</label>
-                                    <input type="date" class="form-control" id="salesListDateFrom">
-                                </div>
-                                <div class="col-md-3">
-                                    <label class="form-label">To Date</label>
-                                    <input type="date" class="form-control" id="salesListDateTo">
-                                </div>
-                                <div class="col-md-3">
-                                    <label class="form-label">Branch</label>
-                                    <select class="form-select" id="salesListBranch">
+                </div>
+            </div>
+        </nav>
+        
+        <!-- Sidebar -->
+        <div class="sidebar no-print" id="sidebar">
+            <ul class="nav flex-column">
+                <li class="nav-item">
+                    <a class="nav-link active" href="#" data-section="dashboard">
+                        <i class="fas fa-tachometer-alt"></i>Dashboard
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="#" data-section="categories">
+                        <i class="fas fa-tags"></i>Categories
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="#" data-section="sales">
+                        <i class="fas fa-shopping-cart"></i>Sales Entry
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="#" data-section="reports">
+                        <i class="fas fa-chart-bar"></i>Reports
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="#" data-section="branches">
+                        <i class="fas fa-store"></i>Branches
+                    </a>
+                </li>
+                <li class="nav-item admin-only">
+                    <a class="nav-link" href="#" data-section="groups">
+                        <i class="fas fa-users"></i>Groups
+                    </a>
+                </li>
+                <li class="nav-item admin-only">
+                    <a class="nav-link" href="#" data-section="users">
+                        <i class="fas fa-user"></i>Users
+                    </a>
+                </li>
+                <li class="nav-item admin-only">
+                    <a class="nav-link" href="#" data-section="settings">
+                        <i class="fas fa-cog"></i>Settings
+                    </a>
+                </li>
+            </ul>
+        </div>
+        
+        <!-- Sidebar Overlay -->
+        <div class="sidebar-overlay" id="sidebarOverlay"></div>
+        
+        <!-- Main Content -->
+        <div class="main-content">
+            <!-- Dashboard Section -->
+            <div id="dashboard-section" class="content-section active">
+                <!-- Dashboard Header -->
+                <div class="dashboard-header">
+                    <h1 class="dashboard-title">Sales Dashboard</h1>
+                    <p class="dashboard-subtitle">Comprehensive overview of your pharmacy sales performance</p>
+                </div>
+                
+                <!-- Dashboard Tabs -->
+                <div class="dashboard-tabs">
+                    <ul class="nav nav-tabs" id="dashboardTabs" role="tablist">
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link active" id="overview-tab" data-bs-toggle="tab" data-bs-target="#overview" type="button" role="tab" aria-controls="overview" aria-selected="true">Overview</button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" id="branch-tab" data-bs-toggle="tab" data-bs-target="#branch" type="button" role="tab" aria-controls="branch" aria-selected="false">Branch Filter</button>
+                        </li>
+                    </ul>
+                    <div class="tab-content" id="dashboardTabsContent">
+                        <div class="tab-pane fade show active" id="overview" role="tabpanel" aria-labelledby="overview-tab">
+                            <!-- Empty content for overview tab -->
+                        </div>
+                        <div class="tab-pane fade" id="branch" role="tabpanel" aria-labelledby="branch-tab">
+                            <div class="row mt-3">
+                                <div class="col-md-6">
+                                    <label class="form-label">Select Branch</label>
+                                    <select class="form-select" id="dashboardBranchSelector">
                                         <option value="">All Branches</option>
                                     </select>
                                 </div>
-                                <div class="col-md-3 d-flex align-items-end">
-                                    <button class="btn btn-primary w-100" id="filterSalesList">
-                                        <i class="fas fa-filter me-2"></i>Filter
+                                <div class="col-md-6 d-flex align-items-end">
+                                    <button class="btn btn-primary w-100" id="applyBranchFilter">
+                                        <i class="fas fa-filter me-2"></i>Apply Filter
                                     </button>
                                 </div>
                             </div>
                         </div>
-                        
-                        <!-- View Toggle -->
-                        <div class="btn-group mb-3" role="group">
-                            <button type="button" class="btn btn-sm btn-outline-primary active" id="cardViewBtn">
-                                <i class="fas fa-th me-1"></i>Card View
-                            </button>
-                            <button type="button" class="btn btn-sm btn-outline-primary" id="tableViewBtn">
-                                <i class="fas fa-table me-1"></i>Table View
-                            </button>
-                        </div>
-                        
-                        <!-- Card View (Default) -->
-                        <div id="salesCardView">
-                            <div class="row" id="salesInvoicesContainer">
-                                <!-- Invoice cards will be populated dynamically -->
-                            </div>
-                            <nav aria-label="Page navigation">
-                                <ul class="pagination" id="salesInvoicesPagination">
-                                    <!-- Pagination will be populated dynamically -->
-                                </ul>
-                            </nav>
-                        </div>
-                        
-                        <!-- Table View (Hidden by default) -->
-                        <div id="salesTableView" style="display: none;">
-                            <div class="table-responsive">
-                                <table class="table table-hover" id="salesListTable">
-                                    <thead>
-                                        <tr>
-                                            <th>ID</th>
-                                            <th>Date</th>
-                                            <th>Category</th>
-                                            <th>Branch</th>
-                                            <th>Sales (PKR)</th>
-                                            <th>Cost (PKR)</th>
-                                            <th>Profit (PKR)</th>
-                                            <th>Actions</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody id="salesListTableBody">
-                                        <!-- Table rows will be populated dynamically -->
-                                    </tbody>
-                                </table>
-                            </div>
-                            <nav aria-label="Page navigation">
-                                <ul class="pagination" id="salesListPagination">
-                                    <!-- Pagination will be populated dynamically -->
-                                </ul>
-                            </nav>
-                        </div>
                     </div>
                 </div>
-            </div>
-            
-            <div class="card">
-                <div class="card-header">
-                    <h5 class="mb-0">Add Daily Sales</h5>
-                </div>
-                <div class="card-body">
-                    <form id="salesEntryForm">
-                        <div class="row mb-3">
-                            <div class="col-md-6">
-                                <label for="saleDate" class="form-label">Date</label>
-                                <input type="date" class="form-control" id="saleDate" required>
-                            </div>
-                            <div class="col-md-6">
-                                <label for="saleBranch" class="form-label">Branch</label>
-                                <select class="form-select" id="saleBranch" required>
-                                    <option value="" selected disabled>Select Branch</option>
-                                </select>
-                            </div>
-                        </div>
-                        
-                        <h5 class="mt-4 mb-3">Enter Sales by Category (PKR)</h5>
-                        <div id="categoryInputs">
-                            <!-- Category inputs will be populated dynamically -->
-                        </div>
-                        
-                        <div class="row mt-4">
-                            <div class="col-md-4 mb-3">
-                                <label for="totalSales" class="form-label">Total Sales (PKR)</label>
-                                <div class="input-group">
-                                    <span class="input-group-text">PKR</span>
-                                    <input type="number" class="form-control" id="totalSales" readonly>
-                                </div>
-                            </div>
-                            <div class="col-md-4 mb-3">
-                                <label for="totalCost" class="form-label">Total Cost (PKR)</label>
-                                <div class="input-group">
-                                    <span class="input-group-text">PKR</span>
-                                    <input type="number" class="form-control" id="totalCost" readonly>
-                                </div>
-                            </div>
-                            <div class="col-md-4 mb-3">
-                                <label for="totalProfit" class="form-label">Total Profit (PKR)</label>
-                                <div class="input-group">
-                                    <span class="input-group-text">PKR</span>
-                                    <input type="number" class="form-control" id="totalProfit" readonly>
-                                </div>
-                            </div>
-                        </div>
-                        
-                        <div class="row mt-3">
-                            <div class="col-12">
-                                <label for="saleNotes" class="form-label">Notes</label>
-                                <textarea class="form-control" id="saleNotes" rows="3"></textarea>
-                            </div>
-                        </div>
-                        
-                        <div class="d-flex justify-content-end mt-4">
-                            <button type="button" class="btn btn-secondary me-2" id="resetSalesForm">Reset</button>
-                            <button type="submit" class="btn btn-primary">Save Sale</button>
-                        </div>
-                    </form>
-                </div>
-            </div>
-        </div>
-        
-        <!-- Reports Section -->
-        <div id="reports-section" class="content-section">
-            <div class="dashboard-header">
-                <h1 class="dashboard-title">Sales Reports</h1>
-                <p class="dashboard-subtitle">Generate and view sales reports</p>
-            </div>
-            
-            <div class="filter-section no-print">
-                <div class="row g-3">
-                    <div class="col-md-3">
-                        <label class="form-label">From Date</label>
-                        <input type="date" class="form-control" id="reportDateFrom">
-                    </div>
-                    <div class="col-md-3">
-                        <label class="form-label">To Date</label>
-                        <input type="date" class="form-control" id="reportDateTo">
-                    </div>
-                    <div class="col-md-3">
-                        <label class="form-label">Branch</label>
-                        <select class="form-select" id="reportBranch">
-                            <option value="">All Branches</option>
-                        </select>
-                    </div>
-                    <div class="col-md-3 d-flex align-items-end">
-                        <button class="btn btn-primary w-100" id="generateReportBtn">
-                            <i class="fas fa-file-alt me-2"></i>Generate Report
+                
+                <!-- Category-Wise Breakdown - Updated -->
+                <div class="mb-4">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <h2 class="section-title mb-0">
+                            <i class="fas fa-th-large"></i>Category-Wise Breakdown
+                        </h2>
+                        <button class="btn btn-primary" id="refreshDashboardBtn">
+                            <i class="fas fa-sync-alt me-2"></i>Refresh
                         </button>
                     </div>
+                    <div class="row" id="categoryBreakdown">
+                        <!-- Category cards will be populated dynamically -->
+                    </div>
+                </div>
+                
+                <!-- Sales & Cost Trends -->
+                <div class="mb-4">
+                    <h2 class="section-title">
+                        <i class="fas fa-chart-line"></i>Sales & Cost Trends
+                    </h2>
+                    <div class="filter-section">
+                        <div class="row g-3">
+                            <div class="col-md-4">
+                                <label class="form-label">Category</label>
+                                <select class="form-select" id="trendCategoryFilter">
+                                    <option value="">All Categories</option>
+                                </select>
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label">Time Range</label>
+                                <select class="form-select" id="trendTimeFilter">
+                                    <option value="7">Last 7 Days</option>
+                                    <option value="30">Last 30 Days</option>
+                                    <option value="90">Last 90 Days</option>
+                                    <option value="365">Last Year</option>
+                                </select>
+                            </div>
+                            <div class="col-md-4 d-flex align-items-end">
+                                <button class="btn btn-primary w-100" id="updateTrendsBtn">
+                                    <i class="fas fa-sync-alt me-2"></i>Update Trends
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="card">
+                        <div class="card-body">
+                            <div class="chart-container">
+                                <canvas id="trendsChart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Branch Summary -->
+                <div class="mb-4">
+                    <h2 class="section-title">
+                        <i class="fas fa-store"></i>Branch Summary
+                    </h2>
+                    <div class="row" id="branchSummary">
+                        <!-- Branch cards will be populated dynamically -->
+                    </div>
+                    <div class="card mt-3">
+                        <div class="card-body">
+                            <div class="row text-center">
+                                <div class="col-md-4">
+                                    <h3 class="text-primary" id="grandTotalSales">PKR 0</h3>
+                                    <p class="mb-0">Grand Total Sales</p>
+                                </div>
+                                <div class="col-md-4">
+                                    <h3 class="text-success" id="grandTotalCost">PKR 0</h3>
+                                    <p class="mb-0">Grand Total Cost</p>
+                                </div>
+                                <div class="col-md-4">
+                                    <h3 class="text-info" id="grandTotalProfit">PKR 0</h3>
+                                    <p class="mb-0">Grand Total Profit</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
             
-            <div class="card">
-                <div class="card-body">
-                    <div class="d-flex justify-content-between align-items-center mb-4">
-                        <h5 class="card-title mb-0">Report Summary</h5>
-                        <button class="btn btn-primary no-print" id="printReportBtn">
-                            <i class="fas fa-print me-2"></i>Print Report
-                        </button>
-                    </div>
-                    <div class="row" id="reportSummary">
-                        <!-- Report summary will be populated dynamically -->
-                    </div>
-                    
-                    <h5 class="card-title mt-4 mb-3">Detailed Report</h5>
-                    <div class="table-responsive">
-                        <table class="table table-hover">
-                            <thead>
-                                <tr>
-                                    <th>Category</th>
-                                    <th>Total Sales (PKR)</th>
-                                    <th>Total Cost (PKR)</th>
-                                    <th>Total Profit (PKR)</th>
-                                    <th>Profit Margin</th>
-                                </tr>
-                            </thead>
-                            <tbody id="reportTableBody">
-                                <!-- Report table will be populated dynamically -->
-                            </tbody>
-                        </table>
-                    </div>
-                    
-                    <h5 class="card-title mt-4 mb-3">Sales Comparison</h5>
-                    <div class="table-responsive">
-                        <table class="table table-hover">
-                            <thead>
-                                <tr>
-                                    <th>Rank</th>
-                                    <th>Branch</th>
-                                    <th>Total Sales (PKR)</th>
-                                    <th>Total Cost (PKR)</th>
-                                    <th>Total Profit (PKR)</th>
-                                    <th>Profit Margin</th>
-                                </tr>
-                            </thead>
-                            <tbody id="salesComparisonTableBody">
-                                <!-- Sales comparison table will be populated dynamically -->
-                            </tbody>
-                        </table>
-                    </div>
-                    
-                    <!-- Date Wise Data Section -->
-                    <h5 class="card-title mt-4 mb-3">Date Wise Data</h5>
-                    <div class="table-responsive">
-                        <table class="table table-hover">
-                            <thead>
-                                <tr>
-                                    <th>Date</th>
-                                    <th>Branch</th>
-                                    <th>Category</th>
-                                    <th>Sales (PKR)</th>
-                                    <th>Cost (PKR)</th>
-                                    <th>Profit (PKR)</th>
-                                </tr>
-                            </thead>
-                            <tbody id="dateWiseTableBody">
-                                <!-- Date wise table will be populated dynamically -->
-                            </tbody>
-                        </table>
-                    </div>
+            <!-- Categories Section -->
+            <div id="categories-section" class="content-section">
+                <div class="dashboard-header">
+                    <h1 class="dashboard-title">Category Management</h1>
+                    <p class="dashboard-subtitle">Manage your product categories</p>
                 </div>
-            </div>
-        </div>
-        
-        <!-- Branches Section -->
-        <div id="branches-section" class="content-section">
-            <div class="dashboard-header">
-                <h1 class="dashboard-title">Branch Management</h1>
-                <p class="dashboard-subtitle">Manage your pharmacy branches</p>
-            </div>
-            
-            <div class="d-flex justify-content-between align-items-center mb-4">
-                <h2 class="section-title mb-0">
-                    <i class="fas fa-store"></i>Branches
-                </h2>
-                <button class="btn btn-primary" id="addBranchBtn">
-                    <i class="fas fa-plus me-2"></i>Add Branch
-                </button>
-            </div>
-            
-            <div class="row" id="branchesContainer">
-                <!-- Branch cards will be populated dynamically -->
-            </div>
-        </div>
-        
-        <!-- Groups Section -->
-        <div id="groups-section" class="content-section">
-            <div class="dashboard-header">
-                <h1 class="dashboard-title">Group Management</h1>
-                <p class="dashboard-subtitle">Manage user groups and permissions</p>
-            </div>
-            
-            <div class="d-flex justify-content-between align-items-center mb-4">
-                <h2 class="section-title mb-0">
-                    <i class="fas fa-users"></i>Groups
-                </h2>
-                <button class="btn btn-primary" id="addGroupBtn">
-                    <i class="fas fa-plus me-2"></i>Add Group
-                </button>
-            </div>
-            
-            <div class="row" id="groupsContainer">
-                <!-- Group cards will be populated dynamically -->
-            </div>
-        </div>
-        
-        <!-- Users Section -->
-        <div id="users-section" class="content-section">
-            <div class="dashboard-header">
-                <h1 class="dashboard-title">User Management</h1>
-                <p class="dashboard-subtitle">Manage system users and their permissions</p>
-            </div>
-            
-            <div class="d-flex justify-content-between align-items-center mb-4">
-                <h2 class="section-title mb-0">
-                    <i class="fas fa-user"></i>Users
-                </h2>
-                <button class="btn btn-primary" id="addUserBtn">
-                    <i class="fas fa-plus me-2"></i>Add User
-                </button>
-            </div>
-            
-            <div class="row" id="usersContainer">
-                <!-- User cards will be populated dynamically -->
-            </div>
-        </div>
-        
-        <!-- Settings Section -->
-        <div id="settings-section" class="content-section">
-            <div class="dashboard-header">
-                <h1 class="dashboard-title">Settings</h1>
-                <p class="dashboard-subtitle">Configure your dashboard preferences</p>
-            </div>
-            
-            <div class="card">
-                <div class="card-body">
-                    <h5 class="card-title mb-4">General Settings</h5>
-                    <form id="settingsForm">
-                        <div class="row mb-3">
-                            <div class="col-md-6">
-                                <label for="companyName" class="form-label">Company Name</label>
-                                <input type="text" class="form-control" id="companyName" value="D.Watson Group of Pharmacy">
-                            </div>
-                            <div class="col-md-6">
-                                <label for="currency" class="form-label">Currency</label>
-                                <select class="form-select" id="currency">
-                                    <option value="PKR" selected>Pakistani Rupee (PKR)</option>
-                                    <option value="USD">US Dollar (USD)</option>
-                                    <option value="EUR">Euro (EUR)</option>
-                                </select>
-                            </div>
-                        </div>
-                        <div class="row mb-3">
-                            <div class="col-md-6">
-                                <label for="dateFormat" class="form-label">Date Format</label>
-                                <select class="form-select" id="dateFormat">
-                                    <option value="DD/MM/YYYY" selected>DD/MM/YYYY</option>
-                                    <option value="MM/DD/YYYY">MM/DD/YYYY</option>
-                                    <option value="YYYY-MM-DD">YYYY-MM-DD</option>
-                                </select>
-                            </div>
-                            <div class="col-md-6">
-                                <label for="itemsPerPage" class="form-label">Items Per Page</label>
-                                <select class="form-select" id="itemsPerPage">
-                                    <option value="10" selected>10</option>
-                                    <option value="25">25</option>
-                                    <option value="50">50</option>
-                                    <option value="100">100</option>
-                                </select>
-                            </div>
-                        </div>
-                        <div class="d-flex justify-content-end">
-                            <button type="submit" class="btn btn-primary">Save Settings</button>
-                        </div>
-                    </form>
+                
+                <div class="d-flex justify-content-between align-items-center mb-4">
+                    <h2 class="section-title mb-0">
+                        <i class="fas fa-tags"></i>Categories
+                    </h2>
+                    <button class="btn btn-primary" id="addCategoryBtn">
+                        <i class="fas fa-plus me-2"></i>Add Category
+                    </button>
+                </div>
+                
+                <div class="row" id="categoriesContainer">
+                    <!-- Category cards will be populated dynamically -->
                 </div>
             </div>
             
-            <div class="card mt-4">
-                <div class="card-body">
-                    <h5 class="card-title mb-4">Data Management</h5>
-                    <div class="row">
-                        <div class="col-md-6">
-                            <button class="btn btn-primary w-100" id="backupDataBtn">
-                                <i class="fas fa-download me-2"></i>Backup Data
+            <!-- Sales Entry Section -->
+            <div id="sales-section" class="content-section">
+                <div class="dashboard-header">
+                    <h1 class="dashboard-title">Sales Entry</h1>
+                    <p class="dashboard-subtitle">Enter daily sales data by category</p>
+                </div>
+                
+                <div class="d-flex justify-content-end mb-3">
+                    <button class="btn btn-outline-primary" id="viewSalesListBtn">
+                        <i class="fas fa-list me-2"></i>View Sales List
+                    </button>
+                </div>
+                
+                <!-- Sales List Section (Initially Hidden) -->
+                <div id="salesListSection" style="display: none;">
+                    <div class="card">
+                        <div class="card-header d-flex justify-content-between align-items-center">
+                            <h5 class="mb-0">Sales List</h5>
+                            <button class="btn btn-sm btn-secondary" id="hideSalesListBtn">
+                                <i class="fas fa-times me-1"></i>Hide
                             </button>
                         </div>
-                        <div class="col-md-6">
-                            <button class="btn btn-secondary w-100" id="restoreDataBtn">
-                                <i class="fas fa-upload me-2"></i>Restore Data
+                        <div class="card-body">
+                            <!-- Filter Section -->
+                            <div class="filter-section mb-3">
+                                <div class="row g-3">
+                                    <div class="col-md-3">
+                                        <label class="form-label">From Date</label>
+                                        <input type="date" class="form-control" id="salesListDateFrom">
+                                    </div>
+                                    <div class="col-md-3">
+                                        <label class="form-label">To Date</label>
+                                        <input type="date" class="form-control" id="salesListDateTo">
+                                    </div>
+                                    <div class="col-md-3">
+                                        <label class="form-label">Branch</label>
+                                        <select class="form-select" id="salesListBranch">
+                                            <option value="">All Branches</option>
+                                        </select>
+                                    </div>
+                                    <div class="col-md-3 d-flex align-items-end">
+                                        <button class="btn btn-primary w-100" id="filterSalesList">
+                                            <i class="fas fa-filter me-2"></i>Filter
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- View Toggle -->
+                            <div class="btn-group mb-3" role="group">
+                                <button type="button" class="btn btn-sm btn-outline-primary active" id="cardViewBtn">
+                                    <i class="fas fa-th me-1"></i>Card View
+                                </button>
+                                <button type="button" class="btn btn-sm btn-outline-primary" id="tableViewBtn">
+                                    <i class="fas fa-table me-1"></i>Table View
+                                </button>
+                            </div>
+                            
+                            <!-- Card View (Default) -->
+                            <div id="salesCardView">
+                                <div class="row" id="salesInvoicesContainer">
+                                    <!-- Invoice cards will be populated dynamically -->
+                                </div>
+                                <nav aria-label="Page navigation">
+                                    <ul class="pagination" id="salesInvoicesPagination">
+                                        <!-- Pagination will be populated dynamically -->
+                                    </ul>
+                                </nav>
+                            </div>
+                            
+                            <!-- Table View (Hidden by default) -->
+                            <div id="salesTableView" style="display: none;">
+                                <div class="table-responsive">
+                                    <table class="table table-hover" id="salesListTable">
+                                        <thead>
+                                            <tr>
+                                                <th>ID</th>
+                                                <th>Date</th>
+                                                <th>Category</th>
+                                                <th>Branch</th>
+                                                <th>Sales (PKR)</th>
+                                                <th>Cost (PKR)</th>
+                                                <th>Profit (PKR)</th>
+                                                <th>Actions</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="salesListTableBody">
+                                            <!-- Table rows will be populated dynamically -->
+                                        </tbody>
+                                    </table>
+                                </div>
+                                <nav aria-label="Page navigation">
+                                    <ul class="pagination" id="salesListPagination">
+                                        <!-- Pagination will be populated dynamically -->
+                                    </ul>
+                                </nav>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="mb-0">Add Daily Sales</h5>
+                    </div>
+                    <div class="card-body">
+                        <form id="salesEntryForm">
+                            <div class="row mb-3">
+                                <div class="col-md-6">
+                                    <label for="saleDate" class="form-label">Date</label>
+                                    <input type="date" class="form-control" id="saleDate" required>
+                                </div>
+                                <div class="col-md-6">
+                                    <label for="saleBranch" class="form-label">Branch</label>
+                                    <select class="form-select" id="saleBranch" required>
+                                        <option value="" selected disabled>Select Branch</option>
+                                    </select>
+                                </div>
+                            </div>
+                            
+                            <h5 class="mt-4 mb-3">Enter Sales by Category (PKR)</h5>
+                            <div id="categoryInputs">
+                                <!-- Category inputs will be populated dynamically -->
+                            </div>
+                            
+                            <div class="row mt-4">
+                                <div class="col-md-4 mb-3">
+                                    <label for="totalSales" class="form-label">Total Sales (PKR)</label>
+                                    <div class="input-group">
+                                        <span class="input-group-text">PKR</span>
+                                        <input type="number" class="form-control" id="totalSales" readonly>
+                                    </div>
+                                </div>
+                                <div class="col-md-4 mb-3">
+                                    <label for="totalCost" class="form-label">Total Cost (PKR)</label>
+                                    <div class="input-group">
+                                        <span class="input-group-text">PKR</span>
+                                        <input type="number" class="form-control" id="totalCost" readonly>
+                                    </div>
+                                </div>
+                                <div class="col-md-4 mb-3">
+                                    <label for="totalProfit" class="form-label">Total Profit (PKR)</label>
+                                    <div class="input-group">
+                                        <span class="input-group-text">PKR</span>
+                                        <input type="number" class="form-control" id="totalProfit" readonly>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="row mt-3">
+                                <div class="col-12">
+                                    <label for="saleNotes" class="form-label">Notes</label>
+                                    <textarea class="form-control" id="saleNotes" rows="3"></textarea>
+                                </div>
+                            </div>
+                            
+                            <div class="d-flex justify-content-end mt-4">
+                                <button type="button" class="btn btn-secondary me-2" id="resetSalesForm">Reset</button>
+                                <button type="submit" class="btn btn-primary">Save Sale</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Reports Section -->
+            <div id="reports-section" class="content-section">
+                <div class="dashboard-header">
+                    <h1 class="dashboard-title">Sales Reports</h1>
+                    <p class="dashboard-subtitle">Generate and view sales reports</p>
+                </div>
+                
+                <div class="filter-section no-print">
+                    <div class="row g-3">
+                        <div class="col-md-3">
+                            <label class="form-label">From Date</label>
+                            <input type="date" class="form-control" id="reportDateFrom">
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label">To Date</label>
+                            <input type="date" class="form-control" id="reportDateTo">
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label">Branch</label>
+                            <select class="form-select" id="reportBranch">
+                                <option value="">All Branches</option>
+                            </select>
+                        </div>
+                        <div class="col-md-3 d-flex align-items-end">
+                            <button class="btn btn-primary w-100" id="generateReportBtn">
+                                <i class="fas fa-file-alt me-2"></i>Generate Report
                             </button>
-                            <input type="file" id="restoreFile" accept=".json" style="display: none;">
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="card">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-center mb-4">
+                            <h5 class="card-title mb-0">Report Summary</h5>
+                            <button class="btn btn-primary no-print" id="printReportBtn">
+                                <i class="fas fa-print me-2"></i>Print Report
+                            </button>
+                        </div>
+                        <div class="row" id="reportSummary">
+                            <!-- Report summary will be populated dynamically -->
+                        </div>
+                        
+                        <h5 class="card-title mt-4 mb-3">Detailed Report</h5>
+                        <div class="table-responsive">
+                            <table class="table table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>Category</th>
+                                        <th>Total Sales (PKR)</th>
+                                        <th>Total Cost (PKR)</th>
+                                        <th>Total Profit (PKR)</th>
+                                        <th>Profit Margin</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="reportTableBody">
+                                    <!-- Report table will be populated dynamically -->
+                                </tbody>
+                            </table>
+                        </div>
+                        
+                        <h5 class="card-title mt-4 mb-3">Sales Comparison</h5>
+                        <div class="table-responsive">
+                            <table class="table table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>Rank</th>
+                                        <th>Branch</th>
+                                        <th>Total Sales (PKR)</th>
+                                        <th>Total Cost (PKR)</th>
+                                        <th>Total Profit (PKR)</th>
+                                        <th>Profit Margin</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="salesComparisonTableBody">
+                                    <!-- Sales comparison table will be populated dynamically -->
+                                </tbody>
+                            </table>
+                        </div>
+                        
+                        <!-- Date Wise Data Section -->
+                        <h5 class="card-title mt-4 mb-3">Date Wise Data</h5>
+                        <div class="table-responsive">
+                            <table class="table table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>Date</th>
+                                        <th>Branch</th>
+                                        <th>Category</th>
+                                        <th>Sales (PKR)</th>
+                                        <th>Cost (PKR)</th>
+                                        <th>Profit (PKR)</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="dateWiseTableBody">
+                                    <!-- Date wise table will be populated dynamically -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Branches Section -->
+            <div id="branches-section" class="content-section">
+                <div class="dashboard-header">
+                    <h1 class="dashboard-title">Branch Management</h1>
+                    <p class="dashboard-subtitle">Manage your pharmacy branches</p>
+                </div>
+                
+                <div class="d-flex justify-content-between align-items-center mb-4">
+                    <h2 class="section-title mb-0">
+                        <i class="fas fa-store"></i>Branches
+                    </h2>
+                    <button class="btn btn-primary" id="addBranchBtn">
+                        <i class="fas fa-plus me-2"></i>Add Branch
+                    </button>
+                </div>
+                
+                <div class="row" id="branchesContainer">
+                    <!-- Branch cards will be populated dynamically -->
+                </div>
+            </div>
+            
+            <!-- Groups Section -->
+            <div id="groups-section" class="content-section">
+                <div class="dashboard-header">
+                    <h1 class="dashboard-title">Group Management</h1>
+                    <p class="dashboard-subtitle">Manage user groups and permissions</p>
+                </div>
+                
+                <div class="d-flex justify-content-between align-items-center mb-4">
+                    <h2 class="section-title mb-0">
+                        <i class="fas fa-users"></i>Groups
+                    </h2>
+                    <button class="btn btn-primary" id="addGroupBtn">
+                        <i class="fas fa-plus me-2"></i>Add Group
+                    </button>
+                </div>
+                
+                <div class="row" id="groupsContainer">
+                    <!-- Group cards will be populated dynamically -->
+                </div>
+            </div>
+            
+            <!-- Users Section -->
+            <div id="users-section" class="content-section">
+                <div class="dashboard-header">
+                    <h1 class="dashboard-title">User Management</h1>
+                    <p class="dashboard-subtitle">Manage system users and their permissions</p>
+                </div>
+                
+                <div class="d-flex justify-content-between align-items-center mb-4">
+                    <h2 class="section-title mb-0">
+                        <i class="fas fa-user"></i>Users
+                    </h2>
+                    <button class="btn btn-primary" id="addUserBtn">
+                        <i class="fas fa-plus me-2"></i>Add User
+                    </button>
+                </div>
+                
+                <div class="row" id="usersContainer">
+                    <!-- User cards will be populated dynamically -->
+                </div>
+            </div>
+            
+            <!-- Settings Section -->
+            <div id="settings-section" class="content-section">
+                <div class="dashboard-header">
+                    <h1 class="dashboard-title">Settings</h1>
+                    <p class="dashboard-subtitle">Configure your dashboard preferences</p>
+                </div>
+                
+                <div class="card">
+                    <div class="card-body">
+                        <h5 class="card-title mb-4">General Settings</h5>
+                        <form id="settingsForm">
+                            <div class="row mb-3">
+                                <div class="col-md-6">
+                                    <label for="companyName" class="form-label">Company Name</label>
+                                    <input type="text" class="form-control" id="companyName" value="D.Watson Group of Pharmacy">
+                                </div>
+                                <div class="col-md-6">
+                                    <label for="currency" class="form-label">Currency</label>
+                                    <select class="form-select" id="currency">
+                                        <option value="PKR" selected>Pakistani Rupee (PKR)</option>
+                                        <option value="USD">US Dollar (USD)</option>
+                                        <option value="EUR">Euro (EUR)</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="row mb-3">
+                                <div class="col-md-6">
+                                    <label for="dateFormat" class="form-label">Date Format</label>
+                                    <select class="form-select" id="dateFormat">
+                                        <option value="DD/MM/YYYY" selected>DD/MM/YYYY</option>
+                                        <option value="MM/DD/YYYY">MM/DD/YYYY</option>
+                                        <option value="YYYY-MM-DD">YYYY-MM-DD</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-6">
+                                    <label for="itemsPerPage" class="form-label">Items Per Page</label>
+                                    <select class="form-select" id="itemsPerPage">
+                                        <option value="10" selected>10</option>
+                                        <option value="25">25</option>
+                                        <option value="50">50</option>
+                                        <option value="100">100</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="d-flex justify-content-end">
+                                <button type="submit" class="btn btn-primary">Save Settings</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+                
+                <div class="card mt-4">
+                    <div class="card-body">
+                        <h5 class="card-title mb-4">Data Management</h5>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <button class="btn btn-primary w-100" id="backupDataBtn">
+                                    <i class="fas fa-download me-2"></i>Backup Data
+                                </button>
+                            </div>
+                            <div class="col-md-6">
+                                <button class="btn btn-secondary w-100" id="restoreDataBtn">
+                                    <i class="fas fa-upload me-2"></i>Restore Data
+                                </button>
+                                <input type="file" id="restoreFile" accept=".json" style="display: none;">
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -1797,10 +1908,23 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     
     <script>
-        // API Service Layer
+        // API Service Layer with Authentication
         class APIService {
             constructor() {
                 this.baseURL = '/api';
+                this.token = localStorage.getItem('authToken') || null;
+            }
+            
+            // Set authentication token
+            setToken(token) {
+                this.token = token;
+                localStorage.setItem('authToken', token);
+            }
+            
+            // Clear authentication token
+            clearToken() {
+                this.token = null;
+                localStorage.removeItem('authToken');
             }
             
             async request(endpoint, options = {}) {
@@ -1808,13 +1932,21 @@
                 const separator = endpoint.includes('?') ? '&' : '?';
                 const url = `${this.baseURL}${endpoint}${separator}_t=${Date.now()}`;
                 
+                // Prepare headers
+                const headers = {
+                    'Content-Type': 'application/json',
+                    'Cache-Control': 'no-cache',
+                    'Pragma': 'no-cache',
+                    ...options.headers
+                };
+                
+                // Add authorization header if token exists
+                if (this.token) {
+                    headers['Authorization'] = `Bearer ${this.token}`;
+                }
+                
                 const config = {
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Cache-Control': 'no-cache',
-                        'Pragma': 'no-cache',
-                        ...options.headers
-                    },
+                    headers,
                     ...options
                 };
                 
@@ -1823,6 +1955,13 @@
                     const response = await fetch(url, config);
                     
                     console.log(`📡 API Response: ${response.status} ${response.statusText}`);
+                    
+                    // Handle 401 Unauthorized specifically
+                    if (response.status === 401) {
+                        this.clearToken();
+                        showLoginSection();
+                        throw new Error('Authentication failed. Please login again.');
+                    }
                     
                     if (!response.ok) {
                         throw new Error(`HTTP error! status: ${response.status}`);
@@ -1835,6 +1974,37 @@
                     console.error(`❌ API request failed for ${endpoint}:`, error);
                     throw error;
                 }
+            }
+            
+            // Authentication methods
+            async login(credentials) {
+                const response = await this.request('/auth/login', {
+                    method: 'POST',
+                    body: JSON.stringify(credentials)
+                });
+                
+                if (response.token) {
+                    this.setToken(response.token);
+                    return response;
+                }
+                
+                throw new Error('Login failed: No token received');
+            }
+            
+            async logout() {
+                try {
+                    await this.request('/auth/logout', {
+                        method: 'POST'
+                    });
+                } catch (error) {
+                    console.error('Logout API call failed:', error);
+                } finally {
+                    this.clearToken();
+                }
+            }
+            
+            async getCurrentUser() {
+                return this.request('/auth/me');
             }
             
             // Health
@@ -1989,24 +2159,6 @@
                     method: 'DELETE'
                 });
             }
-            
-            // Authentication
-            async login(credentials) {
-                return this.request('/auth/login', {
-                    method: 'POST',
-                    body: JSON.stringify(credentials)
-                });
-            }
-            
-            async logout() {
-                return this.request('/auth/logout', {
-                    method: 'POST'
-                });
-            }
-            
-            async getCurrentUser() {
-                return this.request('/auth/me');
-            }
         }
         
         // Global API instance
@@ -2033,23 +2185,121 @@
         
         // Initialize dashboard
         document.addEventListener('DOMContentLoaded', function() {
+            // Check if user is already logged in
+            checkAuthStatus();
+            
             // Setup event listeners
             setupEventListeners();
             
-            // Load initial data
-            loadInitialData();
-            
-            // Set today's date as default
-            const today = new Date().toISOString().split('T')[0];
-            document.getElementById('saleDate').value = today;
-            
-            // Check if user is logged in
-            checkAuthStatus();
+            // Setup login form
+            setupLoginForm();
         });
+        
+        // Setup login form
+        function setupLoginForm() {
+            const loginForm = document.getElementById('loginForm');
+            if (loginForm) {
+                loginForm.addEventListener('submit', handleLogin);
+            }
+        }
+        
+        // Handle login form submission
+        async function handleLogin(event) {
+            event.preventDefault();
+            
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+            const errorElement = document.getElementById('loginError');
+            
+            try {
+                // Show loading state
+                const submitBtn = event.target.querySelector('button[type="submit"]');
+                const originalText = submitBtn.textContent;
+                submitBtn.textContent = 'Logging in...';
+                submitBtn.disabled = true;
+                
+                // Attempt login
+                const response = await api.login({ username, password });
+                
+                // Store user data
+                appData.currentUser = response.user;
+                
+                // Show main app
+                showMainApp();
+                
+                // Load initial data
+                loadInitialData();
+                
+                // Hide error if it was shown
+                errorElement.classList.add('d-none');
+                
+            } catch (error) {
+                console.error('Login error:', error);
+                
+                // Show error message
+                errorElement.textContent = error.message || 'Login failed. Please check your credentials.';
+                errorElement.classList.remove('d-none');
+                
+                // Reset button
+                const submitBtn = event.target.querySelector('button[type="submit"]');
+                submitBtn.textContent = 'Login';
+                submitBtn.disabled = false;
+            }
+        }
+        
+        // Show login section
+        function showLoginSection() {
+            document.getElementById('loginSection').style.display = 'flex';
+            document.getElementById('mainApp').style.display = 'none';
+        }
+        
+        // Show main app
+        function showMainApp() {
+            document.getElementById('loginSection').style.display = 'none';
+            document.getElementById('mainApp').style.display = 'block';
+        }
+        
+        // Check authentication status
+        async function checkAuthStatus() {
+            try {
+                // Check if we have a token
+                const token = localStorage.getItem('authToken');
+                
+                if (!token) {
+                    showLoginSection();
+                    return;
+                }
+                
+                // Set token in API service
+                api.setToken(token);
+                
+                // Get current user info
+                const user = await api.getCurrentUser();
+                
+                // Store user data
+                appData.currentUser = user;
+                
+                // Show main app
+                showMainApp();
+                
+                // Load initial data
+                loadInitialData();
+                
+            } catch (error) {
+                console.error('Authentication check failed:', error);
+                
+                // Clear token and show login
+                api.clearToken();
+                showLoginSection();
+            }
+        }
         
         // Load initial data
         async function loadInitialData() {
             try {
+                // Show loading spinner
+                document.getElementById('loadingSpinner').style.display = 'flex';
+                
                 // Load all data in parallel
                 const [sales, branches, categories, groups, users, settings] = await Promise.all([
                     api.getSales(),
@@ -2074,45 +2324,21 @@
                 
                 // Load dashboard
                 loadDashboard();
+                
             } catch (error) {
                 console.error('Error loading initial data:', error);
                 showNotification('Failed to load initial data', 'error');
-            }
-        }
-        
-        // Check authentication status
-        async function checkAuthStatus() {
-            try {
-                // For demo purposes, we'll simulate a logged-in admin user
-                // In a real application, you would call api.getCurrentUser()
-                
-                // Simulate admin user
-                appData.currentUser = {
-                    _id: 'admin-id',
-                    username: 'admin',
-                    fullName: 'System Administrator',
-                    email: 'admin@dwatson.com',
-                    groupId: 'admin-group-id',
-                    branches: appData.branches.map(b => b._id),
-                    isAdmin: true
-                };
-                
-                // Update UI with current user
-                updateCurrentUserUI();
-                
-                // Update sidebar based on permissions
-                updateSidebarPermissions();
-            } catch (error) {
-                console.error('Error checking authentication status:', error);
-                // Redirect to login page in a real application
-                showNotification('Authentication error. Please login again.', 'error');
+            } finally {
+                // Hide loading spinner
+                document.getElementById('loadingSpinner').style.display = 'none';
             }
         }
         
         // Update current user UI
         function updateCurrentUserUI() {
             if (appData.currentUser) {
-                document.getElementById('currentUserDisplay').textContent = appData.currentUser.fullName || appData.currentUser.username;
+                document.getElementById('currentUserDisplay').textContent = 
+                    appData.currentUser.fullName || appData.currentUser.username;
             }
         }
         
@@ -2120,13 +2346,8 @@
         function updateSidebarPermissions() {
             if (!appData.currentUser) return;
             
-            // Get user group
-            const userGroup = appData.groups.find(g => g._id === appData.currentUser.groupId);
-            
-            if (!userGroup) return;
-            
             // Get user permissions
-            const permissions = userGroup.permissions || [];
+            const permissions = appData.currentUser.permissions || [];
             
             // Show/hide sidebar items based on permissions
             document.querySelectorAll('.sidebar .nav-link').forEach(link => {
@@ -2356,10 +2577,14 @@
         async function logout() {
             try {
                 await api.logout();
-                // Clear current user
-                appData.currentUser = null;
-                // Redirect to login page in a real application
                 showNotification('Logged out successfully', 'success');
+                
+                // Clear user data
+                appData.currentUser = null;
+                
+                // Show login form
+                showLoginSection();
+                
                 // For demo purposes, we'll reload the page
                 setTimeout(() => {
                     window.location.reload();
