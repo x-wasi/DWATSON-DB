@@ -750,6 +750,23 @@
             border-left: 4px solid var(--info-color);
         }
         
+        /* Permission Denied Banner */
+        .permission-denied {
+            background-color: #fff3cd;
+            border: 1px solid #ffeeba;
+            color: #856404;
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+        }
+        
+        .permission-denied i {
+            margin-right: 10px;
+            font-size: 1.2rem;
+        }
+        
         /* Pagination */
         .pagination {
             justify-content: center;
@@ -1553,6 +1570,11 @@
                     <p class="dashboard-subtitle">Manage user groups and permissions</p>
                 </div>
                 
+                <div id="permission-denied-banner" class="permission-denied d-none">
+                    <i class="fas fa-exclamation-triangle"></i>
+                    <span>You need administrator privileges to access this section.</span>
+                </div>
+                
                 <div class="d-flex justify-content-between align-items-center mb-4">
                     <h2 class="section-title mb-0">
                         <i class="fas fa-users"></i>Groups
@@ -1574,6 +1596,11 @@
                     <p class="dashboard-subtitle">Manage system users and their permissions</p>
                 </div>
                 
+                <div id="permission-denied-banner-users" class="permission-denied d-none">
+                    <i class="fas fa-exclamation-triangle"></i>
+                    <span>You need administrator privileges to access this section.</span>
+                </div>
+                
                 <div class="d-flex justify-content-between align-items-center mb-4">
                     <h2 class="section-title mb-0">
                         <i class="fas fa-user"></i>Users
@@ -1593,6 +1620,11 @@
                 <div class="dashboard-header">
                     <h1 class="dashboard-title">Settings</h1>
                     <p class="dashboard-subtitle">Configure your dashboard preferences</p>
+                </div>
+                
+                <div id="permission-denied-banner-settings" class="permission-denied d-none">
+                    <i class="fas fa-exclamation-triangle"></i>
+                    <span>You need administrator privileges to access this section.</span>
                 </div>
                 
                 <div class="card">
@@ -1964,7 +1996,16 @@
                     }
                     
                     if (!response.ok) {
-                        throw new Error(`HTTP error! status: ${response.status}`);
+                        let errorMessage = `HTTP error! status: ${response.status}`;
+                        try {
+                            const errorResponse = await response.json();
+                            if (errorResponse && errorResponse.error) {
+                                errorMessage = errorResponse.error;
+                            }
+                        } catch (e) {
+                            // Ignore if response is not JSON
+                        }
+                        throw new Error(errorMessage);
                     }
                     
                     const data = await response.json();
@@ -2224,6 +2265,9 @@
                 // Store user data
                 appData.currentUser = response.user;
                 
+                // Debug: Log user permissions
+                console.log('User permissions:', response.user.permissions);
+                
                 // Show main app
                 showMainApp();
                 
@@ -2275,6 +2319,9 @@
                 
                 // Get current user info
                 const user = await api.getCurrentUser();
+                
+                // Debug: Log user permissions
+                console.log('User permissions:', user.permissions);
                 
                 // Store user data
                 appData.currentUser = user;
@@ -2334,6 +2381,13 @@
             }
         }
         
+        // Check if user is admin
+        function isAdmin() {
+            return appData.currentUser && 
+                   appData.currentUser.permissions && 
+                   appData.currentUser.permissions.includes('admin');
+        }
+        
         // Update current user UI
         function updateCurrentUserUI() {
             if (appData.currentUser) {
@@ -2349,11 +2403,21 @@
             // Get user permissions
             const permissions = appData.currentUser.permissions || [];
             
+            // Debug: Log permissions
+            console.log('Updating sidebar with permissions:', permissions);
+            
             // Show/hide sidebar items based on permissions
             document.querySelectorAll('.sidebar .nav-link').forEach(link => {
                 const section = link.getAttribute('data-section');
                 
-                if (section && permissions.includes(section)) {
+                // For admin-only sections (groups, users, settings), check for 'admin' permission
+                if (['groups', 'users', 'settings'].includes(section)) {
+                    if (permissions.includes('admin')) {
+                        link.parentElement.style.display = 'block';
+                    } else {
+                        link.parentElement.style.display = 'none';
+                    }
+                } else if (section && permissions.includes(section)) {
                     link.parentElement.style.display = 'block';
                 } else if (section) {
                     link.parentElement.style.display = 'none';
@@ -2394,6 +2458,13 @@
                 link.addEventListener('click', function(e) {
                     e.preventDefault();
                     const section = this.getAttribute('data-section');
+                    
+                    // Check if user has permission to access this section
+                    if (['groups', 'users', 'settings'].includes(section) && !isAdmin()) {
+                        showNotification('You need admin privileges to access this section', 'error');
+                        return;
+                    }
+                    
                     showSection(section);
                     
                     // Update active state
@@ -2501,6 +2572,12 @@
             
             // Add group button
             document.getElementById('addGroupBtn').addEventListener('click', function() {
+                // Check if user is admin
+                if (!isAdmin()) {
+                    showNotification('You need admin privileges to create groups', 'error');
+                    return;
+                }
+                
                 const modal = new bootstrap.Modal(document.getElementById('addGroupModal'));
                 modal.show();
             });
@@ -2516,6 +2593,12 @@
             
             // Add user button
             document.getElementById('addUserBtn').addEventListener('click', function() {
+                // Check if user is admin
+                if (!isAdmin()) {
+                    showNotification('You need admin privileges to create users', 'error');
+                    return;
+                }
+                
                 // Populate group selector
                 populateGroupSelectorInUserModal();
                 
@@ -4066,6 +4149,15 @@
         
         // Load groups
         function loadGroups() {
+            // Check if user is admin
+            if (!isAdmin()) {
+                document.getElementById('permission-denied-banner').classList.remove('d-none');
+                return;
+            }
+            
+            // Hide permission denied banner
+            document.getElementById('permission-denied-banner').classList.add('d-none');
+            
             api.getGroups().then(groupsData => {
                 appData.groups = groupsData;
                 const container = document.getElementById('groupsContainer');
@@ -4107,12 +4199,24 @@
                 });
             }).catch(error => {
                 console.error('Error loading groups:', error);
-                showNotification('Failed to load groups', 'error');
+                showNotification('Failed to load groups: ' + error.message, 'error');
             });
         }
         
         // Save group
         function saveGroup() {
+            // Check if user is admin
+            if (!isAdmin()) {
+                showNotification('You need admin privileges to create groups', 'error');
+                return;
+            }
+            
+            const groupName = document.getElementById('groupName').value.trim();
+            if (!groupName) {
+                showNotification('Group name is required', 'error');
+                return;
+            }
+            
             // Get selected permissions
             const permissions = [];
             document.querySelectorAll('#permissionsGrid input[type="checkbox"]:checked').forEach(checkbox => {
@@ -4120,7 +4224,7 @@
             });
             
             const groupData = {
-                name: document.getElementById('groupName').value,
+                name: groupName,
                 description: document.getElementById('groupDescription').value,
                 permissions: permissions
             };
@@ -4144,12 +4248,18 @@
                 loadGroups();
             }).catch(error => {
                 console.error('Error saving group:', error);
-                showNotification('Failed to save group', 'error');
+                showNotification('Failed to save group: ' + error.message, 'error');
             });
         }
         
         // Edit group
         function editGroup(id) {
+            // Check if user is admin
+            if (!isAdmin()) {
+                showNotification('You need admin privileges to edit groups', 'error');
+                return;
+            }
+            
             api.getGroups().then(groupsData => {
                 const group = groupsData.find(g => g._id === id);
                 if (group) {
@@ -4174,12 +4284,18 @@
                 }
             }).catch(error => {
                 console.error('Error fetching group data:', error);
-                showNotification('Failed to load group data', 'error');
+                showNotification('Failed to load group data: ' + error.message, 'error');
             });
         }
         
         // Update group
         function updateGroup(id) {
+            // Check if user is admin
+            if (!isAdmin()) {
+                showNotification('You need admin privileges to update groups', 'error');
+                return;
+            }
+            
             // Get selected permissions
             const permissions = [];
             document.querySelectorAll('#permissionsGrid input[type="checkbox"]:checked').forEach(checkbox => {
@@ -4221,12 +4337,18 @@
                 }
             }).catch(error => {
                 console.error('Error updating group:', error);
-                showNotification('Failed to update group', 'error');
+                showNotification('Failed to update group: ' + error.message, 'error');
             });
         }
         
         // Delete group
         function deleteGroup(id) {
+            // Check if user is admin
+            if (!isAdmin()) {
+                showNotification('You need admin privileges to delete groups', 'error');
+                return;
+            }
+            
             if (confirm('Are you sure you want to delete this group? This will affect all users assigned to this group.')) {
                 api.deleteGroup(id).then(() => {
                     showNotification('Group deleted successfully!', 'success');
@@ -4235,13 +4357,22 @@
                     loadGroups();
                 }).catch(error => {
                     console.error('Error deleting group:', error);
-                    showNotification('Failed to delete group', 'error');
+                    showNotification('Failed to delete group: ' + error.message, 'error');
                 });
             }
         }
         
         // Load users
         function loadUsers() {
+            // Check if user is admin
+            if (!isAdmin()) {
+                document.getElementById('permission-denied-banner-users').classList.remove('d-none');
+                return;
+            }
+            
+            // Hide permission denied banner
+            document.getElementById('permission-denied-banner-users').classList.add('d-none');
+            
             api.getUsers().then(usersData => {
                 appData.users = usersData;
                 const container = document.getElementById('usersContainer');
@@ -4295,12 +4426,18 @@
                 });
             }).catch(error => {
                 console.error('Error loading users:', error);
-                showNotification('Failed to load users', 'error');
+                showNotification('Failed to load users: ' + error.message, 'error');
             });
         }
         
         // Save user
         function saveUser() {
+            // Check if user is admin
+            if (!isAdmin()) {
+                showNotification('You need admin privileges to create users', 'error');
+                return;
+            }
+            
             // Get selected branches
             const branches = [];
             document.querySelectorAll('#userBranchesSelector input[type="checkbox"]:checked').forEach(checkbox => {
@@ -4335,12 +4472,18 @@
                 loadUsers();
             }).catch(error => {
                 console.error('Error saving user:', error);
-                showNotification('Failed to save user', 'error');
+                showNotification('Failed to save user: ' + error.message, 'error');
             });
         }
         
         // Edit user
         function editUser(id) {
+            // Check if user is admin
+            if (!isAdmin()) {
+                showNotification('You need admin privileges to edit users', 'error');
+                return;
+            }
+            
             api.getUsers().then(usersData => {
                 const user = usersData.find(u => u._id === id);
                 if (user) {
@@ -4368,12 +4511,18 @@
                 }
             }).catch(error => {
                 console.error('Error fetching user data:', error);
-                showNotification('Failed to load user data', 'error');
+                showNotification('Failed to load user data: ' + error.message, 'error');
             });
         }
         
         // Update user
         function updateUser(id) {
+            // Check if user is admin
+            if (!isAdmin()) {
+                showNotification('You need admin privileges to update users', 'error');
+                return;
+            }
+            
             // Get selected branches
             const branches = [];
             document.querySelectorAll('#userBranchesSelector input[type="checkbox"]:checked').forEach(checkbox => {
@@ -4426,12 +4575,18 @@
                 }
             }).catch(error => {
                 console.error('Error updating user:', error);
-                showNotification('Failed to update user', 'error');
+                showNotification('Failed to update user: ' + error.message, 'error');
             });
         }
         
         // Delete user
         function deleteUser(id) {
+            // Check if user is admin
+            if (!isAdmin()) {
+                showNotification('You need admin privileges to delete users', 'error');
+                return;
+            }
+            
             if (confirm('Are you sure you want to delete this user?')) {
                 api.deleteUser(id).then(() => {
                     showNotification('User deleted successfully!', 'success');
@@ -4440,13 +4595,22 @@
                     loadUsers();
                 }).catch(error => {
                     console.error('Error deleting user:', error);
-                    showNotification('Failed to delete user', 'error');
+                    showNotification('Failed to delete user: ' + error.message, 'error');
                 });
             }
         }
         
         // Load settings
         function loadSettings() {
+            // Check if user is admin
+            if (!isAdmin()) {
+                document.getElementById('permission-denied-banner-settings').classList.remove('d-none');
+                return;
+            }
+            
+            // Hide permission denied banner
+            document.getElementById('permission-denied-banner-settings').classList.add('d-none');
+            
             api.getSettings().then(settingsData => {
                 appData.settings = settingsData;
                 document.getElementById('companyName').value = settingsData.companyName || 'D.Watson Group of Pharmacy';
@@ -4455,12 +4619,18 @@
                 document.getElementById('itemsPerPage').value = settingsData.itemsPerPage || 10;
             }).catch(error => {
                 console.error('Error loading settings:', error);
-                showNotification('Failed to load settings', 'error');
+                showNotification('Failed to load settings: ' + error.message, 'error');
             });
         }
         
         // Save settings
         function saveSettings() {
+            // Check if user is admin
+            if (!isAdmin()) {
+                showNotification('You need admin privileges to update settings', 'error');
+                return;
+            }
+            
             const settingsData = {
                 companyName: document.getElementById('companyName').value,
                 currency: document.getElementById('currency').value,
@@ -4472,7 +4642,7 @@
                 showNotification('Settings saved successfully!', 'success');
             }).catch(error => {
                 console.error('Error saving settings:', error);
-                showNotification('Failed to save settings', 'error');
+                showNotification('Failed to save settings: ' + error.message, 'error');
             });
         }
         
@@ -4507,7 +4677,7 @@
                 showNotification('Data backed up successfully!', 'success');
             }).catch(error => {
                 console.error('Error backing up data:', error);
-                showNotification('Failed to backup data', 'error');
+                showNotification('Failed to backup data: ' + error.message, 'error');
             });
         }
         
