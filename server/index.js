@@ -158,8 +158,13 @@ const authenticate = async (req, res, next) => {
   }
 };
 
-// Admin Middleware
+// Admin Middleware - FIXED
 const isAdmin = (req, res, next) => {
+  // Check if user has admin permission
+  if (!req.user || !req.user.groupId || !req.user.groupId.permissions) {
+    return res.status(403).json({ error: 'Access denied. Admin privileges required.' });
+  }
+  
   if (!req.user.groupId.permissions.includes('admin')) {
     return res.status(403).json({ error: 'Access denied. Admin privileges required.' });
   }
@@ -444,7 +449,7 @@ app.delete('/api/categories/:id', authenticate, isAdmin, async (req, res) => {
   }
 });
 
-// Groups CRUD - Fixed to properly check admin permissions
+// Groups CRUD - FIXED
 app.get('/api/groups', authenticate, isAdmin, async (req, res) => {
   try {
     const groups = await Group.find().sort({ createdAt: -1 });
@@ -535,7 +540,7 @@ app.delete('/api/groups/:id', authenticate, isAdmin, async (req, res) => {
   }
 });
 
-// Users CRUD - Fixed to properly check admin permissions
+// Users CRUD - FIXED
 app.get('/api/users', authenticate, isAdmin, async (req, res) => {
   try {
     const users = await User.find()
@@ -898,7 +903,7 @@ app.post('/api/admin/update', async (req, res) => {
   }
 });
 
-// Seed default data - Fixed to ensure admin group and user are created correctly
+// Seed default data - FIXED to ensure admin group and user are created correctly
 async function seedDefaultData() {
   console.log('🌱 Starting database seeding...');
   
@@ -941,7 +946,7 @@ async function seedDefaultData() {
       console.log('⏭️ Categories already exist, skipping category seeding');
     }
     
-    // Seed groups - Fixed to ensure admin permissions are set correctly
+    // Seed groups - FIXED to ensure admin permissions are set correctly
     const groupCount = await Group.estimatedDocumentCount();
     console.log(`📊 Current group count: ${groupCount}`);
     
@@ -973,7 +978,7 @@ async function seedDefaultData() {
       console.log('⏭️ Groups already exist, skipping group seeding');
     }
     
-    // Seed admin user - Fixed to ensure it references the admin group
+    // Seed admin user - FIXED to ensure it references the admin group
     const userCount = await User.estimatedDocumentCount();
     console.log(`📊 Current user count: ${userCount}`);
     
@@ -986,6 +991,8 @@ async function seedDefaultData() {
         console.error('❌ Admin group not found, cannot create admin user');
         return;
       }
+      
+      console.log('🔑 Admin group found:', adminGroup.name, 'with permissions:', adminGroup.permissions);
       
       // Get all branches
       const allBranches = await Branch.find();
@@ -1008,7 +1015,7 @@ async function seedDefaultData() {
       
       await adminUser.save();
       console.log('✅ Seeded default admin user (username: admin, password: admin123)');
-      console.log('🔑 Admin user permissions:', adminGroup.permissions);
+      console.log('🔑 Admin user group ID:', adminUser.groupId);
     } else {
       console.log('⏭️ Users already exist, skipping user seeding');
     }
