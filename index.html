@@ -2347,27 +2347,46 @@
                 // Show loading spinner
                 document.getElementById('loadingSpinner').style.display = 'flex';
                 
-                // Load all data in parallel
-                const [sales, branches, categories, groups, users, settings] = await Promise.all([
+                // Load basic data that all users need
+                const [sales, branches, categories, settings] = await Promise.all([
                     api.getSales(),
                     api.getBranches(),
                     api.getCategories(),
-                    api.getGroups(),
-                    api.getUsers(),
                     api.getSettings()
                 ]);
                 
                 appData.sales = sales;
                 appData.branches = branches;
                 appData.categories = categories;
-                appData.groups = groups;
-                appData.users = users;
                 appData.settings = settings;
+                
+                // Only load groups and users if user is admin
+                if (isAdmin()) {
+                    try {
+                        const [groups, users] = await Promise.all([
+                            api.getGroups(),
+                            api.getUsers()
+                        ]);
+                        appData.groups = groups;
+                        appData.users = users;
+                    } catch (error) {
+                        console.error('Error loading admin data:', error);
+                        // Don't show notification for this error as it's expected for non-admins
+                    }
+                }
                 
                 // Populate selectors
                 populateBranchSelectors();
                 populateCategorySelectors();
-                populateGroupSelectors();
+                
+                // Only populate group selectors if user is admin
+                if (isAdmin()) {
+                    populateGroupSelectors();
+                }
+                
+                // Update UI based on permissions
+                updateSidebarPermissions();
+                updateCurrentUserUI();
                 
                 // Load dashboard
                 loadDashboard();
