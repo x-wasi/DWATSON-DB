@@ -307,6 +307,116 @@ app.post('/api/auth/logout', authenticate, (req, res) => {
   res.json({ message: 'Logged out successfully' });
 });
 
+// Signup/Registration endpoint
+app.post('/api/auth/signup', async (req, res) => {
+  try {
+    const { username, fullName, email, password, confirmPassword } = req.body;
+    
+    console.log('🔍 Signup attempt received:', { username, email, hasPassword: !!password });
+    
+    // Validation
+    if (!username || !fullName || !email || !password || !confirmPassword) {
+      return res.status(400).json({ error: 'All fields are required' });
+    }
+    
+    if (password !== confirmPassword) {
+      return res.status(400).json({ error: 'Passwords do not match' });
+    }
+    
+    if (password.length < 6) {
+      return res.status(400).json({ error: 'Password must be at least 6 characters long' });
+    }
+    
+    // Email validation
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      return res.status(400).json({ error: 'Please enter a valid email address' });
+    }
+    
+    // Check if database is connected
+    if (mongoose.connection.readyState !== 1) {
+      console.log('❌ Signup failed: Database not connected');
+      return res.status(500).json({ error: 'Database connection error' });
+    }
+    
+    // Check if user already exists
+    const existingUser = await User.findOne({
+      $or: [
+        { username: username },
+        { email: email }
+      ]
+    });
+    
+    if (existingUser) {
+      if (existingUser.username === username) {
+        return res.status(409).json({ error: 'Username already exists' });
+      }
+      if (existingUser.email === email) {
+        return res.status(409).json({ error: 'Email already registered' });
+      }
+    }
+    
+    // Get default group (Sales group) for new users
+    let defaultGroup = await Group.findOne({ name: 'Sales' });
+    if (!defaultGroup) {
+      // If Sales group doesn't exist, create it
+      defaultGroup = await Group.create({
+        name: 'Sales',
+        description: 'Sales staff with access to sales entry and reports',
+        permissions: ['dashboard', 'sales', 'reports'],
+        isDefault: true
+      });
+      console.log('✅ Created default Sales group');
+    }
+    
+    // Get all branches for new user (or empty array if no branches exist)
+    const allBranches = await Branch.find();
+    
+    // Hash password
+    const salt = await bcrypt.genSalt(10);
+    const hashedPassword = await bcrypt.hash(password, salt);
+    
+    // Create new user
+    const newUser = new User({
+      username: username.trim(),
+      fullName: fullName.trim(),
+      email: email.trim().toLowerCase(),
+      password: hashedPassword,
+      groupId: defaultGroup._id,
+      branches: allBranches.map(b => b._id), // Assign all branches by default
+      isActive: true
+    });
+    
+    await newUser.save();
+    
+    // Populate group information for response
+    await newUser.populate('groupId', 'name permissions');
+    
+    console.log('✅ New user created successfully:', newUser.username);
+    
+    // Generate JWT token
+    const token = jwt.sign({ id: newUser._id }, JWT_SECRET, { expiresIn: '1d' });
+    
+    res.status(201).json({
+      message: 'User registered successfully',
+      token,
+      user: {
+        id: newUser._id,
+        username: newUser.username,
+        fullName: newUser.fullName,
+        email: newUser.email,
+        groupId: newUser.groupId,
+        branches: newUser.branches,
+        permissions: newUser.groupId.permissions
+      }
+    });
+    
+  } catch (error) {
+    console.error('❌ Signup error:', error);
+    res.status(500).json({ error: 'Server error during registration' });
+  }
+});
+
 app.get('/api/auth/me', authenticate, async (req, res) => {
   try {
     // Fetch the user again to ensure we have the latest data
