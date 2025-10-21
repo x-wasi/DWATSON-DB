@@ -133,7 +133,7 @@ const Sale = mongoose.model('Sale', SaleSchema);
 const Settings = mongoose.model('Settings', SettingsSchema);
 
 // JWT Secret
-const JWT_SECRET = process.env.JWT_SECRET || 'f56f4d1a70c09d6efc9e45b269f86f20deedabc22a12c85e841946fad5ace2f19c611a3069c8cbe1b9b54cd4dbc2649f79aa4c3880b0b46a640a3fd232049273';
+const JWT_SECRET = process.env.JWT_SECRET || 'pharmacy_sales_secret_key';
 
 // Authentication Middleware - Enhanced with debugging
 const authenticate = async (req, res, next) => {
@@ -1050,8 +1050,16 @@ async function seedDefaultData() {
       ];
       await Group.insertMany(defaultGroups);
       console.log('✅ Seeded 3 default groups');
+      
+      // Verify admin group was created correctly
+      const adminGroup = await Group.findOne({ name: 'Admin' });
+      if (adminGroup) {
+        console.log('✅ Admin group created successfully with permissions:', adminGroup.permissions);
+      } else {
+        console.error('❌ Admin group not found after creation');
+      }
     } else {
-      console.log('⏭️ Groups already exist, checking admin group...');
+      console.log('⏭️ Groups already exist, skipping group seeding');
       
       // Check if admin group exists and has correct permissions
       const adminGroup = await Group.findOne({ name: 'Admin' });
@@ -1071,60 +1079,70 @@ async function seedDefaultData() {
     }
     
     // Seed admin user - FIXED to ensure it references the admin group
-    console.log('👤 Checking admin user...');
+    const userCount = await User.estimatedDocumentCount();
+    console.log(`📊 Current user count: ${userCount}`);
     
-    // Find the admin group
-    const adminGroup = await Group.findOne({ name: 'Admin' });
-    if (!adminGroup) {
-      console.error('❌ Admin group not found, cannot create admin user');
-      return;
-    }
-    
-    // Get all branches
-    const allBranches = await Branch.find();
-    if (allBranches.length === 0) {
-      console.error('❌ No branches found, cannot create admin user');
-      return;
-    }
-    
-    const salt = await bcrypt.genSalt(10);
-    const hashedPassword = await bcrypt.hash('admin123', salt);
-    
-    // Check if admin user exists
-    let adminUser = await User.findOne({ username: 'admin' });
-    
-    if (!adminUser) {
-      console.log('👤 Creating default admin user...');
-      adminUser = new User({
+    if (userCount === 0) {
+      console.log('👤 Seeding default admin user...');
+      
+      // Find the admin group
+      const adminGroup = await Group.findOne({ name: 'Admin' });
+      if (!adminGroup) {
+        console.error('❌ Admin group not found, cannot create admin user');
+        return;
+      }
+      
+      console.log('🔑 Admin group found:', adminGroup.name, 'with permissions:', adminGroup.permissions);
+      
+      // Get all branches
+      const allBranches = await Branch.find();
+      if (allBranches.length === 0) {
+        console.error('❌ No branches found, cannot create admin user');
+        return;
+      }
+      
+      const salt = await bcrypt.genSalt(10);
+      const hashedPassword = await bcrypt.hash('admin123', salt);
+      
+      const adminUser = new User({
         username: 'admin',
         fullName: 'System Administrator',
         email: 'admin@dwatson.com',
         password: hashedPassword,
         groupId: adminGroup._id,
-        branches: allBranches.map(b => b._id),
-        isActive: true
+        branches: allBranches.map(b => b._id)
       });
       
       await adminUser.save();
-      console.log('✅ Created default admin user (username: admin, password: admin123)');
+      console.log('✅ Seeded default admin user (username: admin, password: admin123)');
+      console.log('🔑 Admin user group ID:', adminUser.groupId);
+      
+      // Verify admin user was created correctly
+      const createdUser = await User.findById(adminUser._id).populate('groupId');
+      if (createdUser) {
+        console.log('✅ Admin user created successfully with permissions:', createdUser.groupId.permissions);
+      } else {
+        console.error('❌ Admin user not found after creation');
+      }
     } else {
-      console.log('👤 Admin user exists, updating password and group...');
-      // Update the admin user's password and group to ensure it's correct
-      adminUser.password = hashedPassword;
-      adminUser.groupId = adminGroup._id;
-      adminUser.branches = allBranches.map(b => b._id);
-      adminUser.isActive = true;
-      await adminUser.save();
-      console.log('✅ Updated admin user (username: admin, password: admin123)');
-    }
-    
-    // Verify admin user was created correctly
-    const createdUser = await User.findById(adminUser._id).populate('groupId');
-    if (createdUser) {
-      console.log('✅ Admin user found with group:', createdUser.groupId.name);
-      console.log('✅ Admin user permissions:', createdUser.groupId.permissions);
-    } else {
-      console.error('❌ Admin user not found after creation/update');
+      console.log('⏭️ Users already exist, skipping user seeding');
+      
+      // Check if admin user exists and has correct group
+      const adminUser = await User.findOne({ username: 'admin' }).populate('groupId');
+      if (adminUser) {
+        console.log('✅ Admin user found with group:', adminUser.groupId.name);
+        console.log('✅ Admin user permissions:', adminUser.groupId.permissions);
+        
+        // Ensure admin user has admin permission
+        if (!adminUser.groupId.permissions.includes('admin')) {
+          console.log('⚠️ Admin user group missing admin permission, updating...');
+          adminUser.groupId.permissions.push('admin');
+          await adminUser.groupId.save();
+          console.log('✅ Admin user group updated with admin permission');
+        }
+      } else {
+        console.error('❌ Admin user not found');
+      }
     }
     
     console.log('🎉 Database seeding completed!');
@@ -1132,6 +1150,16 @@ async function seedDefaultData() {
     console.error('❌ Seed error:', error.message);
   }
 }
+
+// Serve static frontend
+const clientDir = path.resolve(__dirname, '..');
+app.use('/', express.static(clientDir));
+console.log('📁 Serving static files from:', clientDir);
+
+// Start server
+mongoose.connection.once('open', () => {
+  console.log('🔗 MongoDB connection opened, starting seeding process...');
+  seedDefaultData();
   
   app.listen(port, () => {
     console.log('🎉 ==========================================');
@@ -1171,5 +1199,4 @@ app.use('*', (req, res) => {
     res.sendFile(path.join(clientDir, 'index.html'));
   }
 });
-
 
