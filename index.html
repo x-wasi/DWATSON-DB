@@ -2504,7 +2504,8 @@
                 appData.currentUser = response.user;
                 
                 // Debug: Log user permissions
-                console.log('New user permissions:', response.user.permissions);
+                console.log('New user created with admin permissions:', response.user.permissions);
+                console.log('User has full admin access:', response.user.permissions.includes('admin'));
                 
                 // Show main app
                 showMainApp();
@@ -2516,7 +2517,7 @@
                 errorElement.classList.add('d-none');
                 
                 // Show success message
-                showNotification('Account created successfully! Welcome to D.Watson Pharmacy Dashboard.');
+                showNotification('Account created successfully with admin privileges! Welcome to D.Watson Pharmacy Dashboard.');
                 
             } catch (error) {
                 console.error('Signup error:', error);
