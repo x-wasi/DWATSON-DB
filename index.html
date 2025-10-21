@@ -2876,37 +2876,37 @@
                 }
             });
             
-    // Add user button
-document.getElementById('addUserBtn').addEventListener('click', function() {
-    // Check if user is admin
-    if (!isAdmin()) {
-        showNotification('You need admin privileges to create users', 'error');
-        return;
-    }
-    
-    // Clear form
-    document.getElementById('userForm').reset();
-    
-    // Reset save button to create mode
-    const saveBtn = document.getElementById('saveUserBtn');
-    saveBtn.textContent = 'Save User';
-    saveBtn.onclick = function() {
-        if (document.getElementById('userForm').checkValidity()) {
-            saveUser();
-        } else {
-            document.getElementById('userForm').reportValidity();
-        }
-    };
-    
-    // Populate group selector
-    populateGroupSelectorInUserModal();
-    
-    // Populate branch selector
-    populateBranchSelectorInUserModal();
-    
-    const modal = new bootstrap.Modal(document.getElementById('addUserModal'));
-    modal.show();
-});
+            // Add user button
+            document.getElementById('addUserBtn').addEventListener('click', function() {
+                // Check if user is admin
+                if (!isAdmin()) {
+                    showNotification('You need admin privileges to create users', 'error');
+                    return;
+                }
+                
+                // Clear form
+                document.getElementById('userForm').reset();
+                
+                // Reset save button to create mode
+                const saveBtn = document.getElementById('saveUserBtn');
+                saveBtn.textContent = 'Save User';
+                saveBtn.onclick = function() {
+                    if (document.getElementById('userForm').checkValidity()) {
+                        saveUser();
+                    } else {
+                        document.getElementById('userForm').reportValidity();
+                    }
+                };
+                
+                // Populate group selector
+                populateGroupSelectorInUserModal();
+                
+                // Populate branch selector
+                populateBranchSelectorInUserModal();
+                
+                const modal = new bootstrap.Modal(document.getElementById('addUserModal'));
+                modal.show();
+            });
             
             // Confirm promote user button
             document.getElementById('confirmPromoteBtn').addEventListener('click', function() {
@@ -4672,188 +4672,301 @@ document.getElementById('addUserBtn').addEventListener('click', function() {
             // Hide permission denied banner
             document.getElementById('permission-denied-banner-users').classList.add('d-none');
             
-            // Ensure groups are loaded first
+            // Ensure groups and branches are loaded first
             const loadUsersData = async () => {
-                // Load groups if not already loaded
-                if (!appData.groups || appData.groups.length === 0) {
-                    try {
+                try {
+                    // Load groups if not already loaded
+                    if (!appData.groups || appData.groups.length === 0) {
                         const groupsData = await api.getGroups();
                         appData.groups = groupsData;
-                    } catch (error) {
-                        console.error('Error loading groups:', error);
                     }
-                }
-                
- // Load users
-function loadUsers() {
-    // Check if user is admin
-    if (!isAdmin()) {
-        document.getElementById('permission-denied-banner-users').classList.remove('d-none');
-        return;
-    }
-    
-    // Hide permission denied banner
-    document.getElementById('permission-denied-banner-users').classList.add('d-none');
-    
-    // Ensure groups and branches are loaded first
-    const loadUsersData = async () => {
-        try {
-            // Load groups if not already loaded
-            if (!appData.groups || appData.groups.length === 0) {
-                const groupsData = await api.getGroups();
-                appData.groups = groupsData;
-            }
-            
-            // Load branches if not already loaded
-            if (!appData.branches || appData.branches.length === 0) {
-                const branchesData = await api.getBranches();
-                appData.branches = branchesData;
-            }
-            
-            // Now load users
-            const usersData = await api.getUsers();
-            appData.users = usersData;
-            const container = document.getElementById('usersContainer');
-            container.innerHTML = '';
-            
-            usersData.forEach(user => {
-                const card = document.createElement('div');
-                card.className = 'col-md-4 mb-3';
-                
-                // Get user group
-                let groupName = 'None';
-                if (user.groupId) {
-                    const userGroup = appData.groups.find(g => g._id === user.groupId);
-                    groupName = userGroup ? userGroup.name : 'None';
-                }
-                
-                // Get user branches
-                let branchNames = 'None';
-                if (user.branches && user.branches.length > 0) {
-                    branchNames = user.branches.map(branchId => {
-                        const branch = appData.branches.find(b => b._id === branchId);
-                        return branch ? branch.name : 'Unknown';
-                    }).join(', ');
-                }
-                
-                card.innerHTML = `
-                    <div class="card">
-                        <div class="card-body">
-                            <div class="user-info">
-                                <div class="user-avatar">${user.fullName ? user.fullName.charAt(0).toUpperCase() : user.username.charAt(0).toUpperCase()}</div>
-                                <div class="user-details">
-                                    <h5>${user.fullName || user.username}</h5>
-                                    <p>${user.email}</p>
+                    
+                    // Load branches if not already loaded
+                    if (!appData.branches || appData.branches.length === 0) {
+                        const branchesData = await api.getBranches();
+                        appData.branches = branchesData;
+                    }
+                    
+                    // Now load users
+                    const usersData = await api.getUsers();
+                    appData.users = usersData;
+                    const container = document.getElementById('usersContainer');
+                    container.innerHTML = '';
+                    
+                    usersData.forEach(user => {
+                        const card = document.createElement('div');
+                        card.className = 'col-md-4 mb-3';
+                        
+                        // Get user group
+                        let groupName = 'None';
+                        if (user.groupId) {
+                            const userGroup = appData.groups.find(g => g._id === user.groupId);
+                            groupName = userGroup ? userGroup.name : 'None';
+                        }
+                        
+                        // Get user branches
+                        let branchNames = 'None';
+                        if (user.branches && user.branches.length > 0) {
+                            branchNames = user.branches.map(branchId => {
+                                const branch = appData.branches.find(b => b._id === branchId);
+                                return branch ? branch.name : 'Unknown';
+                            }).join(', ');
+                        }
+                        
+                        card.innerHTML = `
+                            <div class="card">
+                                <div class="card-body">
+                                    <div class="user-info">
+                                        <div class="user-avatar">${user.fullName ? user.fullName.charAt(0).toUpperCase() : user.username.charAt(0).toUpperCase()}</div>
+                                        <div class="user-details">
+                                            <h5>${user.fullName || user.username}</h5>
+                                            <p>${user.email}</p>
+                                        </div>
+                                    </div>
+                                    <div class="mb-2">
+                                        <small class="text-muted">Group:</small>
+                                        <div>${groupName}</div>
+                                    </div>
+                                    <div class="mb-3">
+                                        <small class="text-muted">Assigned Branches:</small>
+                                        <div>${branchNames}</div>
+                                    </div>
+                                    <div class="d-flex justify-content-between">
+                                        <button class="btn btn-sm btn-outline-primary" onclick="editUser('${user._id}')">
+                                            <i class="fas fa-edit"></i> Edit
+                                        </button>
+                                        <button class="btn btn-sm btn-outline-danger" onclick="deleteUser('${user._id}')">
+                                            <i class="fas fa-trash"></i> Delete
+                                        </button>
+                                    </div>
                                 </div>
                             </div>
-                            <div class="mb-2">
-                                <small class="text-muted">Group:</small>
-                                <div>${groupName}</div>
-                            </div>
-                            <div class="mb-3">
-                                <small class="text-muted">Assigned Branches:</small>
-                                <div>${branchNames}</div>
-                            </div>
-                            <div class="d-flex justify-content-between">
-                                <button class="btn btn-sm btn-outline-primary" onclick="editUser('${user._id}')">
-                                    <i class="fas fa-edit"></i> Edit
-                                </button>
-                                <button class="btn btn-sm btn-outline-danger" onclick="deleteUser('${user._id}')">
-                                    <i class="fas fa-trash"></i> Delete
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                `;
-                container.appendChild(card);
-            });
-        } catch (error) {
-            console.error('Error loading users:', error);
-            showNotification('Failed to load users: ' + error.message, 'error');
+                        `;
+                        container.appendChild(card);
+                    });
+                } catch (error) {
+                    console.error('Error loading users:', error);
+                    showNotification('Failed to load users: ' + error.message, 'error');
+                }
+            };
+            
+            loadUsersData();
         }
-    };
-    
-    loadUsersData();
-}
-      // Save user
-function saveUser() {
-    // Check if user is admin
-    if (!isAdmin()) {
-        showNotification('You need admin privileges to create users', 'error');
-        return;
-    }
-    
-    // Get selected branches
-    const branches = [];
-    document.querySelectorAll('#userBranchesSelector input[type="checkbox"]:checked').forEach(checkbox => {
-        branches.push(checkbox.value);
-    });
-    
-    // Get selected group
-    const groupId = document.getElementById('userGroup').value;
-    
-    // Validate required fields
-    const username = document.getElementById('userName').value.trim();
-    const fullName = document.getElementById('userFullName').value.trim();
-    const email = document.getElementById('userEmail').value.trim();
-    const password = document.getElementById('userPassword').value;
-    
-    if (!username || !fullName || !email || !password || !groupId) {
-        showNotification('Please fill in all required fields', 'error');
-        return;
-    }
-    
-    const userData = {
-        username: username,
-        fullName: fullName,
-        email: email,
-        password: password,
-        groupId: groupId,
-        branches: branches
-    };
-    
-    console.log('Saving user data:', userData); // Debug log
-    
-    api.createUser(userData).then(user => {
-        // Close modal
-        bootstrap.Modal.getInstance(document.getElementById('addUserModal')).hide();
         
-        // Reset form
-        document.getElementById('userForm').reset();
-        
-        // Uncheck all branches
-        document.querySelectorAll('#userBranchesSelector input[type="checkbox"]').forEach(checkbox => {
-            checkbox.checked = false;
-        });
-        
-        // Show notification
-        showNotification('User saved successfully!', 'success');
-        
-        // Reload groups and branches to ensure we have the latest data
-        Promise.all([
-            api.getGroups(),
-            api.getBranches()
-        ]).then(([groupsData, branchesData]) => {
-            appData.groups = groupsData;
-            appData.branches = branchesData;
-            // Now reload users
-            loadUsers();
-        }).catch(error => {
-            console.error('Error reloading groups and branches:', error);
-            // Even if there's an error, try to reload users
-            loadUsers();
-        });
-    }).catch(error => {
-        console.error('Error saving user:', error);
-        showNotification('Failed to save user: ' + error.message, 'error');
-    });
-}
+        // Save user
+        function saveUser() {
+            // Check if user is admin
+            if (!isAdmin()) {
+                showNotification('You need admin privileges to create users', 'error');
+                return;
+            }
+            
+            // Get selected branches
+            const branches = [];
+            document.querySelectorAll('#userBranchesSelector input[type="checkbox"]:checked').forEach(checkbox => {
+                branches.push(checkbox.value);
+            });
+            
+            // Get selected group
+            const groupId = document.getElementById('userGroup').value;
+            
+            // Validate required fields
+            const username = document.getElementById('userName').value.trim();
+            const fullName = document.getElementById('userFullName').value.trim();
+            const email = document.getElementById('userEmail').value.trim();
+            const password = document.getElementById('userPassword').value;
+            
+            if (!username || !fullName || !email || !password || !groupId) {
+                showNotification('Please fill in all required fields', 'error');
+                return;
+            }
+            
+            const userData = {
+                username: username,
+                fullName: fullName,
+                email: email,
+                password: password,
+                groupId: groupId,
+                branches: branches
+            };
+            
+            console.log('Saving user data:', userData); // Debug log
+            
+            api.createUser(userData).then(user => {
+                // Close modal
+                bootstrap.Modal.getInstance(document.getElementById('addUserModal')).hide();
                 
-                // Reload users
-                loadUsers();
+                // Reset form
+                document.getElementById('userForm').reset();
+                
+                // Uncheck all branches
+                document.querySelectorAll('#userBranchesSelector input[type="checkbox"]').forEach(checkbox => {
+                    checkbox.checked = false;
+                });
+                
+                // Show notification
+                showNotification('User saved successfully!', 'success');
+                
+                // Reload groups and branches to ensure we have the latest data
+                Promise.all([
+                    api.getGroups(),
+                    api.getBranches()
+                ]).then(([groupsData, branchesData]) => {
+                    appData.groups = groupsData;
+                    appData.branches = branchesData;
+                    // Now reload users
+                    loadUsers();
+                }).catch(error => {
+                    console.error('Error reloading groups and branches:', error);
+                    // Even if there's an error, try to reload users
+                    loadUsers();
+                });
             }).catch(error => {
                 console.error('Error saving user:', error);
                 showNotification('Failed to save user: ' + error.message, 'error');
+            });
+        }
+        
+        // Edit user
+        function editUser(id) {
+            // Check if user is admin
+            if (!isAdmin()) {
+                showNotification('You need admin privileges to edit users', 'error');
+                return;
+            }
+            
+            api.getUsers().then(usersData => {
+                const user = usersData.find(u => u._id === id);
+                if (user) {
+                    document.getElementById('userName').value = user.username;
+                    document.getElementById('userFullName').value = user.fullName || '';
+                    document.getElementById('userEmail').value = user.email || '';
+                    document.getElementById('userPassword').value = ''; // Don't show password for security
+                    document.getElementById('userGroup').value = user.groupId || '';
+                    
+                    // First populate the branch selector (this creates the checkboxes)
+                    populateBranchSelectorInUserModal();
+                    
+                    // Then set the checkboxes for the user's assigned branches
+                    setTimeout(() => {
+                        document.querySelectorAll('#userBranchesSelector input[type="checkbox"]').forEach(checkbox => {
+                            checkbox.checked = user.branches && user.branches.includes(checkbox.value);
+                        });
+                    }, 100); // Small delay to ensure DOM is updated
+                    
+                    // Change save button to update
+                    const saveBtn = document.getElementById('saveUserBtn');
+                    saveBtn.textContent = 'Update User';
+                    saveBtn.onclick = function() {
+                        updateUser(id);
+                    };
+                    
+                    // Show modal
+                    const modal = new bootstrap.Modal(document.getElementById('addUserModal'));
+                    modal.show();
+                }
+            }).catch(error => {
+                console.error('Error fetching user data:', error);
+                showNotification('Failed to load user data: ' + error.message, 'error');
+            });
+        }
+        
+        // Update user
+        function updateUser(id) {
+            // Check if user is admin
+            if (!isAdmin()) {
+                showNotification('You need admin privileges to update users', 'error');
+                return;
+            }
+            
+            // Get selected branches
+            const branches = [];
+            document.querySelectorAll('#userBranchesSelector input[type="checkbox"]:checked').forEach(checkbox => {
+                branches.push(checkbox.value);
+            });
+            
+            // Get selected group
+            const groupId = document.getElementById('userGroup').value;
+            
+            // Validate required fields
+            const username = document.getElementById('userName').value.trim();
+            const fullName = document.getElementById('userFullName').value.trim();
+            const email = document.getElementById('userEmail').value.trim();
+            
+            if (!username || !fullName || !email || !groupId) {
+                showNotification('Please fill in all required fields', 'error');
+                return;
+            }
+            
+            const userData = {
+                username: username,
+                fullName: fullName,
+                email: email,
+                groupId: groupId,
+                branches: branches
+            };
+            
+            // Only include password if it's provided
+            const password = document.getElementById('userPassword').value;
+            if (password) {
+                userData.password = password;
+            }
+            
+            console.log('Updating user data:', userData); // Debug log
+            
+            api.updateUser(id, userData).then(() => {
+                // Close modal
+                bootstrap.Modal.getInstance(document.getElementById('addUserModal')).hide();
+                
+                // Reset form
+                document.getElementById('userForm').reset();
+                
+                // Uncheck all branches
+                document.querySelectorAll('#userBranchesSelector input[type="checkbox"]').forEach(checkbox => {
+                    checkbox.checked = false;
+                });
+                
+                // Reset save button
+                const saveBtn = document.getElementById('saveUserBtn');
+                saveBtn.textContent = 'Save User';
+                saveBtn.onclick = saveUser;
+                
+                // Show notification
+                showNotification('User updated successfully!', 'success');
+                
+                // Reload groups and branches to ensure we have the latest data
+                Promise.all([
+                    api.getGroups(),
+                    api.getBranches()
+                ]).then(([groupsData, branchesData]) => {
+                    appData.groups = groupsData;
+                    appData.branches = branchesData;
+                    // Now reload users
+                    loadUsers();
+                    
+                    // Update current user data if the current user was updated
+                    if (appData.currentUser && appData.currentUser._id === id) {
+                        appData.currentUser = { ...appData.currentUser, ...userData };
+                        updateCurrentUserUI();
+                        updateSidebarPermissions();
+                        populateBranchSelectors();
+                    }
+                }).catch(error => {
+                    console.error('Error reloading groups and branches:', error);
+                    // Even if there's an error, try to reload users
+                    loadUsers();
+                    
+                    // Update current user data if the current user was updated
+                    if (appData.currentUser && appData.currentUser._id === id) {
+                        appData.currentUser = { ...appData.currentUser, ...userData };
+                        updateCurrentUserUI();
+                        updateSidebarPermissions();
+                        populateBranchSelectors();
+                    }
+                });
+            }).catch(error => {
+                console.error('Error updating user:', error);
+                showNotification('Failed to update user: ' + error.message, 'error');
             });
         }
         
@@ -4903,148 +5016,6 @@ function saveUser() {
                 submitBtn.disabled = false;
             }
         }
-        
-       // Edit user
-function editUser(id) {
-    // Check if user is admin
-    if (!isAdmin()) {
-        showNotification('You need admin privileges to edit users', 'error');
-        return;
-    }
-    
-    api.getUsers().then(usersData => {
-        const user = usersData.find(u => u._id === id);
-        if (user) {
-            document.getElementById('userName').value = user.username;
-            document.getElementById('userFullName').value = user.fullName || '';
-            document.getElementById('userEmail').value = user.email || '';
-            document.getElementById('userPassword').value = ''; // Don't show password for security
-            document.getElementById('userGroup').value = user.groupId || '';
-            
-            // First populate the branch selector (this creates the checkboxes)
-            populateBranchSelectorInUserModal();
-            
-            // Then set the checkboxes for the user's assigned branches
-            setTimeout(() => {
-                document.querySelectorAll('#userBranchesSelector input[type="checkbox"]').forEach(checkbox => {
-                    checkbox.checked = user.branches && user.branches.includes(checkbox.value);
-                });
-            }, 100); // Small delay to ensure DOM is updated
-            
-            // Change save button to update
-            const saveBtn = document.getElementById('saveUserBtn');
-            saveBtn.textContent = 'Update User';
-            saveBtn.onclick = function() {
-                updateUser(id);
-            };
-            
-            // Show modal
-            const modal = new bootstrap.Modal(document.getElementById('addUserModal'));
-            modal.show();
-        }
-    }).catch(error => {
-        console.error('Error fetching user data:', error);
-        showNotification('Failed to load user data: ' + error.message, 'error');
-    });
-}
-// Update user
-function updateUser(id) {
-    // Check if user is admin
-    if (!isAdmin()) {
-        showNotification('You need admin privileges to update users', 'error');
-        return;
-    }
-    
-    // Get selected branches
-    const branches = [];
-    document.querySelectorAll('#userBranchesSelector input[type="checkbox"]:checked').forEach(checkbox => {
-        branches.push(checkbox.value);
-    });
-    
-    // Get selected group
-    const groupId = document.getElementById('userGroup').value;
-    
-    // Validate required fields
-    const username = document.getElementById('userName').value.trim();
-    const fullName = document.getElementById('userFullName').value.trim();
-    const email = document.getElementById('userEmail').value.trim();
-    
-    if (!username || !fullName || !email || !groupId) {
-        showNotification('Please fill in all required fields', 'error');
-        return;
-    }
-    
-    const userData = {
-        username: username,
-        fullName: fullName,
-        email: email,
-        groupId: groupId,
-        branches: branches
-    };
-    
-    // Only include password if it's provided
-    const password = document.getElementById('userPassword').value;
-    if (password) {
-        userData.password = password;
-    }
-    
-    console.log('Updating user data:', userData); // Debug log
-    
-    api.updateUser(id, userData).then(() => {
-        // Close modal
-        bootstrap.Modal.getInstance(document.getElementById('addUserModal')).hide();
-        
-        // Reset form
-        document.getElementById('userForm').reset();
-        
-        // Uncheck all branches
-        document.querySelectorAll('#userBranchesSelector input[type="checkbox"]').forEach(checkbox => {
-            checkbox.checked = false;
-        });
-        
-        // Reset save button
-        const saveBtn = document.getElementById('saveUserBtn');
-        saveBtn.textContent = 'Save User';
-        saveBtn.onclick = saveUser;
-        
-        // Show notification
-        showNotification('User updated successfully!', 'success');
-        
-        // Reload groups and branches to ensure we have the latest data
-        Promise.all([
-            api.getGroups(),
-            api.getBranches()
-        ]).then(([groupsData, branchesData]) => {
-            appData.groups = groupsData;
-            appData.branches = branchesData;
-            // Now reload users
-            loadUsers();
-            
-            // Update current user data if the current user was updated
-            if (appData.currentUser && appData.currentUser._id === id) {
-                appData.currentUser = { ...appData.currentUser, ...userData };
-                updateCurrentUserUI();
-                updateSidebarPermissions();
-                populateBranchSelectors();
-            }
-        }).catch(error => {
-            console.error('Error reloading groups and branches:', error);
-            // Even if there's an error, try to reload users
-            loadUsers();
-            
-            // Update current user data if the current user was updated
-            if (appData.currentUser && appData.currentUser._id === id) {
-                appData.currentUser = { ...appData.currentUser, ...userData };
-                updateCurrentUserUI();
-                updateSidebarPermissions();
-                populateBranchSelectors();
-            }
-        });
-    }).catch(error => {
-        console.error('Error updating user:', error);
-        showNotification('Failed to update user: ' + error.message, 'error');
-    });
-}
         
         // Load settings
         function loadSettings() {
@@ -5513,5 +5484,3 @@ function updateUser(id) {
     </script>
 </body>
 </html>
-
-
