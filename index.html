@@ -2884,6 +2884,21 @@
                     return;
                 }
                 
+                // Clear form
+                document.getElementById('userForm').reset();
+                document.getElementById('userError').classList.add('d-none');
+                
+                // Reset save button to create mode
+                const saveBtn = document.getElementById('saveUserBtn');
+                saveBtn.textContent = 'Save User';
+                saveBtn.onclick = function() {
+                    if (document.getElementById('userForm').checkValidity()) {
+                        saveUser();
+                    } else {
+                        document.getElementById('userForm').reportValidity();
+                    }
+                };
+                
                 // Populate group selector
                 populateGroupSelectorInUserModal();
                 
@@ -4683,7 +4698,20 @@
             // Hide permission denied banner
             document.getElementById('permission-denied-banner-users').classList.add('d-none');
             
-            api.getUsers().then(usersData => {
+            // Ensure groups are loaded first
+            const loadUsersData = async () => {
+                // Load groups if not already loaded
+                if (!appData.groups || appData.groups.length === 0) {
+                    try {
+                        const groupsData = await api.getGroups();
+                        appData.groups = groupsData;
+                    } catch (error) {
+                        console.error('Error loading groups:', error);
+                    }
+                }
+                
+                // Now load users
+                const usersData = await api.getUsers();
                 appData.users = usersData;
                 const container = document.getElementById('usersContainer');
                 container.innerHTML = '';
@@ -4734,7 +4762,9 @@
                     `;
                     container.appendChild(card);
                 });
-            }).catch(error => {
+            };
+            
+            loadUsersData().catch(error => {
                 console.error('Error loading users:', error);
                 showNotification('Failed to load users: ' + error.message, 'error');
             });
