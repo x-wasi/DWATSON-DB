@@ -5,6 +5,8 @@ import morgan from 'morgan';
 import dotenv from 'dotenv';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import bcrypt from 'bcryptjs';
+import jwt from 'jsonwebtoken';
 
 dotenv.config();
 
@@ -63,6 +65,32 @@ const CategorySchema = new mongoose.Schema(
   { timestamps: true }
 );
 
+// Group Schema
+const GroupSchema = new mongoose.Schema(
+  {
+    name: { type: String, required: true, unique: true },
+    description: { type: String, default: '' },
+    permissions: [{ type: String }],
+    isDefault: { type: Boolean, default: false }
+  },
+  { timestamps: true }
+);
+
+// User Schema
+const UserSchema = new mongoose.Schema(
+  {
+    username: { type: String, required: true, unique: true },
+    fullName: { type: String, required: true },
+    email: { type: String, required: true, unique: true },
+    password: { type: String, required: true },
+    groupId: { type: mongoose.Schema.Types.ObjectId, ref: 'Group', required: true },
+    branches: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Branch' }],
+    isActive: { type: Boolean, default: true },
+    lastLogin: { type: Date }
+  },
+  { timestamps: true }
+);
+
 const SaleSchema = new mongoose.Schema(
   {
     branchId: { type: mongoose.Schema.Types.ObjectId, ref: 'Branch', required: true },
@@ -99,8 +127,44 @@ const SettingsSchema = new mongoose.Schema(
 
 const Branch = mongoose.model('Branch', BranchSchema);
 const Category = mongoose.model('Category', CategorySchema);
+const Group = mongoose.model('Group', GroupSchema);
+const User = mongoose.model('User', UserSchema);
 const Sale = mongoose.model('Sale', SaleSchema);
 const Settings = mongoose.model('Settings', SettingsSchema);
+
+// JWT Secret
+const JWT_SECRET = process.env.JWT_SECRET || 'pharmacy_sales_secret_key';
+
+// Authentication Middleware
+const authenticate = async (req, res, next) => {
+  try {
+    const token = req.header('Authorization')?.replace('Bearer ', '');
+    
+    if (!token) {
+      return res.status(401).json({ error: 'Access denied. No token provided.' });
+    }
+    
+    const decoded = jwt.verify(token, JWT_SECRET);
+    const user = await User.findById(decoded.id).populate('groupId');
+    
+    if (!user || !user.isActive) {
+      return res.status(401).json({ error: 'Invalid token or inactive user.' });
+    }
+    
+    req.user = user;
+    next();
+  } catch (error) {
+    res.status(401).json({ error: 'Invalid token.' });
+  }
+};
+
+// Admin Middleware
+const isAdmin = (req, res, next) => {
+  if (!req.user.groupId.permissions.includes('admin')) {
+    return res.status(403).json({ error: 'Access denied. Admin privileges required.' });
+  }
+  next();
+};
 
 // Health endpoint
 app.get('/api/health', (req, res) => {
@@ -120,8 +184,75 @@ app.get('/api/health', (req, res) => {
   res.json(healthData);
 });
 
+// Authentication Routes
+app.post('/api/auth/login', async (req, res) => {
+  try {
+    const { username, password } = req.body;
+    
+    if (!username || !password) {
+      return res.status(400).json({ error: 'Username and password are required' });
+    }
+    
+    const user = await User.findOne({ username }).populate('groupId');
+    
+    if (!user || !user.isActive) {
+      return res.status(401).json({ error: 'Invalid credentials' });
+    }
+    
+    const isMatch = await bcrypt.compare(password, user.password);
+    
+    if (!isMatch) {
+      return res.status(401).json({ error: 'Invalid credentials' });
+    }
+    
+    // Update last login
+    user.lastLogin = new Date();
+    await user.save();
+    
+    const token = jwt.sign({ id: user._id }, JWT_SECRET, { expiresIn: '1d' });
+    
+    res.json({
+      token,
+      user: {
+        id: user._id,
+        username: user.username,
+        fullName: user.fullName,
+        email: user.email,
+        groupId: user.groupId,
+        branches: user.branches,
+        permissions: user.groupId.permissions
+      }
+    });
+  } catch (error) {
+    console.error('Login error:', error);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
+app.post('/api/auth/logout', authenticate, (req, res) => {
+  res.json({ message: 'Logged out successfully' });
+});
+
+app.get('/api/auth/me', authenticate, async (req, res) => {
+  try {
+    const user = await User.findById(req.user._id).populate('groupId');
+    res.json({
+      id: user._id,
+      username: user.username,
+      fullName: user.fullName,
+      email: user.email,
+      groupId: user.groupId,
+      branches: user.branches,
+      permissions: user.groupId.permissions
+    });
+  } catch (error) {
+    console.error('Get user error:', error);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
 // Settings API
-app.get('/api/settings', async (req, res) => {
+app.get('/api/settings', authenticate, async (req, res) => {
   try {
     let settings = await Settings.findOne();
     if (!settings) {
@@ -134,7 +265,7 @@ app.get('/api/settings', async (req, res) => {
   }
 });
 
-app.put('/api/settings', async (req, res) => {
+app.put('/api/settings', authenticate, isAdmin, async (req, res) => {
   try {
     const update = {
       companyName: req.body.companyName ?? 'D.Watson Group of Pharmacy',
@@ -156,10 +287,16 @@ app.put('/api/settings', async (req, res) => {
 });
 
 // Branches CRUD
-app.get('/api/branches', async (req, res) => {
+app.get('/api/branches', authenticate, async (req, res) => {
   console.log('📋 GET /api/branches - Fetching all branches');
   try {
-    const branches = await Branch.find().sort({ createdAt: -1 });
+    // If user is not admin, only return assigned branches
+    const filter = {};
+    if (!req.user.permissions.includes('admin')) {
+      filter._id = { $in: req.user.branches };
+    }
+    
+    const branches = await Branch.find(filter).sort({ createdAt: -1 });
     console.log(`✅ Found ${branches.length} branches`);
     res.json(branches);
   } catch (error) {
@@ -168,7 +305,7 @@ app.get('/api/branches', async (req, res) => {
   }
 });
 
-app.post('/api/branches', async (req, res) => {
+app.post('/api/branches', authenticate, isAdmin, async (req, res) => {
   console.log('➕ POST /api/branches - Creating new branch:', req.body);
   try {
     const name = (req.body.name || '').trim();
@@ -185,7 +322,7 @@ app.post('/api/branches', async (req, res) => {
   }
 });
 
-app.put('/api/branches/:id', async (req, res) => {
+app.put('/api/branches/:id', authenticate, isAdmin, async (req, res) => {
   console.log('✏️ PUT /api/branches/:id - Updating branch', req.params.id, req.body);
   try {
     const id = req.params.id;
@@ -236,7 +373,7 @@ app.put('/api/branches/:id', async (req, res) => {
   }
 });
 
-app.delete('/api/branches/:id', async (req, res) => {
+app.delete('/api/branches/:id', authenticate, isAdmin, async (req, res) => {
   try {
     const branch = await Branch.findByIdAndDelete(req.params.id);
     if (!branch) {
@@ -244,6 +381,11 @@ app.delete('/api/branches/:id', async (req, res) => {
     }
     // Also delete all sales associated with this branch
     await Sale.deleteMany({ branchId: req.params.id });
+    // Remove branch from all users
+    await User.updateMany(
+      { branches: req.params.id },
+      { $pull: { branches: req.params.id } }
+    );
     res.json({ ok: true });
   } catch (error) {
     console.error('❌ Error deleting branch:', error.message);
@@ -252,7 +394,7 @@ app.delete('/api/branches/:id', async (req, res) => {
 });
 
 // Categories CRUD
-app.get('/api/categories', async (req, res) => {
+app.get('/api/categories', authenticate, async (req, res) => {
   console.log('🏷️ GET /api/categories - Fetching all categories');
   try {
     const categories = await Category.find().sort({ createdAt: -1 });
@@ -264,7 +406,7 @@ app.get('/api/categories', async (req, res) => {
   }
 });
 
-app.post('/api/categories', async (req, res) => {
+app.post('/api/categories', authenticate, isAdmin, async (req, res) => {
   console.log('➕ POST /api/categories - Creating new category:', req.body);
   try {
     const category = await Category.create(req.body);
@@ -276,7 +418,7 @@ app.post('/api/categories', async (req, res) => {
   }
 });
 
-app.put('/api/categories/:id', async (req, res) => {
+app.put('/api/categories/:id', authenticate, isAdmin, async (req, res) => {
   try {
     const updated = await Category.findByIdAndUpdate(req.params.id, req.body, { new: true });
     if (!updated) {
@@ -289,7 +431,7 @@ app.put('/api/categories/:id', async (req, res) => {
   }
 });
 
-app.delete('/api/categories/:id', async (req, res) => {
+app.delete('/api/categories/:id', authenticate, isAdmin, async (req, res) => {
   try {
     const category = await Category.findByIdAndDelete(req.params.id);
     if (!category) {
@@ -302,8 +444,225 @@ app.delete('/api/categories/:id', async (req, res) => {
   }
 });
 
+// Groups CRUD
+app.get('/api/groups', authenticate, isAdmin, async (req, res) => {
+  try {
+    const groups = await Group.find().sort({ createdAt: -1 });
+    res.json(groups);
+  } catch (error) {
+    console.error('Error fetching groups:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.post('/api/groups', authenticate, isAdmin, async (req, res) => {
+  try {
+    const { name, description, permissions } = req.body;
+    
+    if (!name) {
+      return res.status(400).json({ error: 'Group name is required' });
+    }
+    
+    // Check if group with same name already exists
+    const existingGroup = await Group.findOne({ name });
+    if (existingGroup) {
+      return res.status(400).json({ error: 'Group with this name already exists' });
+    }
+    
+    const group = new Group({ name, description, permissions });
+    await group.save();
+    
+    res.status(201).json(group);
+  } catch (error) {
+    console.error('Error creating group:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.put('/api/groups/:id', authenticate, isAdmin, async (req, res) => {
+  try {
+    const { name, description, permissions } = req.body;
+    
+    if (!name) {
+      return res.status(400).json({ error: 'Group name is required' });
+    }
+    
+    // Check if group with same name already exists (excluding current group)
+    const existingGroup = await Group.findOne({ 
+      name, 
+      _id: { $ne: req.params.id } 
+    });
+    
+    if (existingGroup) {
+      return res.status(400).json({ error: 'Group with this name already exists' });
+    }
+    
+    const group = await Group.findByIdAndUpdate(
+      req.params.id,
+      { name, description, permissions },
+      { new: true }
+    );
+    
+    if (!group) {
+      return res.status(404).json({ error: 'Group not found' });
+    }
+    
+    res.json(group);
+  } catch (error) {
+    console.error('Error updating group:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.delete('/api/groups/:id', authenticate, isAdmin, async (req, res) => {
+  try {
+    const group = await Group.findByIdAndDelete(req.params.id);
+    
+    if (!group) {
+      return res.status(404).json({ error: 'Group not found' });
+    }
+    
+    // Update all users with this group to have no group
+    await User.updateMany(
+      { groupId: req.params.id },
+      { $unset: { groupId: 1 } }
+    );
+    
+    res.json({ message: 'Group deleted successfully' });
+  } catch (error) {
+    console.error('Error deleting group:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Users CRUD
+app.get('/api/users', authenticate, isAdmin, async (req, res) => {
+  try {
+    const users = await User.find()
+      .populate('groupId', 'name permissions')
+      .sort({ createdAt: -1 });
+    res.json(users);
+  } catch (error) {
+    console.error('Error fetching users:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.post('/api/users', authenticate, isAdmin, async (req, res) => {
+  try {
+    const { username, fullName, email, password, groupId, branches } = req.body;
+    
+    if (!username || !fullName || !email || !password || !groupId) {
+      return res.status(400).json({ error: 'All fields are required' });
+    }
+    
+    // Check if user with same username or email already exists
+    const existingUser = await User.findOne({
+      $or: [
+        { username },
+        { email }
+      ]
+    });
+    
+    if (existingUser) {
+      return res.status(400).json({ error: 'User with this username or email already exists' });
+    }
+    
+    // Hash password
+    const salt = await bcrypt.genSalt(10);
+    const hashedPassword = await bcrypt.hash(password, salt);
+    
+    const user = new User({
+      username,
+      fullName,
+      email,
+      password: hashedPassword,
+      groupId,
+      branches
+    });
+    
+    await user.save();
+    
+    // Populate group for response
+    await user.populate('groupId', 'name permissions');
+    
+    res.status(201).json(user);
+  } catch (error) {
+    console.error('Error creating user:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.put('/api/users/:id', authenticate, isAdmin, async (req, res) => {
+  try {
+    const { username, fullName, email, password, groupId, branches, isActive } = req.body;
+    
+    if (!username || !fullName || !email || !groupId) {
+      return res.status(400).json({ error: 'Username, full name, email, and group are required' });
+    }
+    
+    // Check if user with same username or email already exists (excluding current user)
+    const existingUser = await User.findOne({
+      $or: [
+        { username },
+        { email }
+      ],
+      _id: { $ne: req.params.id }
+    });
+    
+    if (existingUser) {
+      return res.status(400).json({ error: 'User with this username or email already exists' });
+    }
+    
+    const updateData = {
+      username,
+      fullName,
+      email,
+      groupId,
+      branches,
+      isActive
+    };
+    
+    // Only update password if provided
+    if (password) {
+      const salt = await bcrypt.genSalt(10);
+      updateData.password = await bcrypt.hash(password, salt);
+    }
+    
+    const user = await User.findByIdAndUpdate(
+      req.params.id,
+      updateData,
+      { new: true }
+    ).populate('groupId', 'name permissions');
+    
+    if (!user) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+    
+    res.json(user);
+  } catch (error) {
+    console.error('Error updating user:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.delete('/api/users/:id', authenticate, isAdmin, async (req, res) => {
+  try {
+    const user = await User.findByIdAndDelete(req.params.id);
+    
+    if (!user) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+    
+    res.json({ message: 'User deleted successfully' });
+  } catch (error) {
+    console.error('Error deleting user:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
 // Sales CRUD
-app.get('/api/sales', async (req, res) => {
+app.get('/api/sales', authenticate, async (req, res) => {
   console.log('💰 GET /api/sales - Fetching sales with filters:', req.query);
   try {
     const filter = {};
@@ -327,6 +686,11 @@ app.get('/api/sales', async (req, res) => {
       }
     }
     
+    // If user is not admin, filter by user's assigned branches
+    if (!req.user.permissions.includes('admin')) {
+      filter.branchId = { $in: req.user.branches };
+    }
+    
     const sales = await Sale.find(filter)
       .sort({ date: -1 })
       .populate('branchId', 'name')
@@ -340,30 +704,13 @@ app.get('/api/sales', async (req, res) => {
   }
 });
 
-// app.post('/api/sales', async (req, res) => {
-//   console.log('➕ POST /api/sales - Creating new sale:', req.body);
-//   try {
-//     const sale = await Sale.create(req.body);
-//     console.log('✅ Sale created successfully:', sale._id);
-    
-//     // Populate the references before returning
-//     const populatedSale = await Sale.findById(sale._id)
-//       .populate('branchId', 'name')
-//       .populate('categoryId', 'name');
-    
-//     res.status(201).json(populatedSale);
-//   } catch (error) {
-//     console.error('❌ Error creating sale:', error.message);
-//     res.status(400).json({ error: error.message });
-//   }
-// });
-app.post('/api/sales', async (req, res) => {
+app.post('/api/sales', authenticate, async (req, res) => {
   console.log('➕ POST /api/sales - Creating new sale:', req.body);
   try {
     // Copy request data
     const data = { ...req.body };
 
-    // ✅ If category string missing, fetch from Category model
+    // If category string missing, fetch from Category model
     if (!data.category && data.categoryId) {
       try {
         const cat = await Category.findById(data.categoryId);
@@ -374,11 +721,16 @@ app.post('/api/sales', async (req, res) => {
       }
     }
 
-    // ✅ Create sale using fixed data
+    // Check if user has access to this branch
+    if (!req.user.permissions.includes('admin') && !req.user.branches.includes(data.branchId)) {
+      return res.status(403).json({ error: 'Access denied. You do not have permission to access this branch.' });
+    }
+
+    // Create sale using fixed data
     const sale = await Sale.create(data);
     console.log('✅ Sale created successfully:', sale._id);
 
-    // ✅ Populate branch & category references before sending response
+    // Populate branch & category references before sending response
     const populatedSale = await Sale.findById(sale._id)
       .populate('branchId', 'name')
       .populate('categoryId', 'name');
@@ -390,10 +742,14 @@ app.post('/api/sales', async (req, res) => {
   }
 });
 
-
-app.put('/api/sales/:id', async (req, res) => {
+app.put('/api/sales/:id', authenticate, async (req, res) => {
   console.log('✏️ PUT /api/sales/:id - Updating sale', req.params.id, req.body);
   try {
+    // Check if user has access to this branch
+    if (!req.user.permissions.includes('admin') && !req.user.branches.includes(req.body.branchId)) {
+      return res.status(403).json({ error: 'Access denied. You do not have permission to access this branch.' });
+    }
+
     const updated = await Sale.findByIdAndUpdate(req.params.id, req.body, { new: true })
       .populate('branchId', 'name')
       .populate('categoryId', 'name');
@@ -410,13 +766,20 @@ app.put('/api/sales/:id', async (req, res) => {
   }
 });
 
-app.delete('/api/sales/:id', async (req, res) => {
+app.delete('/api/sales/:id', authenticate, async (req, res) => {
   console.log('🗑️ DELETE /api/sales/:id - Deleting sale', req.params.id);
   try {
-    const deleted = await Sale.findByIdAndDelete(req.params.id);
-    if (!deleted) {
+    // Check if user has access to this sale's branch
+    const sale = await Sale.findById(req.params.id);
+    if (!sale) {
       return res.status(404).json({ error: 'Sale not found' });
     }
+    
+    if (!req.user.permissions.includes('admin') && !req.user.branches.includes(sale.branchId)) {
+      return res.status(403).json({ error: 'Access denied. You do not have permission to access this branch.' });
+    }
+
+    const deleted = await Sale.findByIdAndDelete(req.params.id);
     console.log('✅ Sale deleted:', deleted._id);
     res.json({ ok: true });
   } catch (error) {
@@ -452,8 +815,20 @@ app.post('/api/admin/delete', async (req, res) => {
     } else if (resource === 'branches') {
       deleted = await Branch.findByIdAndDelete(id);
       await Sale.deleteMany({ branchId: id });
+      await User.updateMany(
+        { branches: id },
+        { $pull: { branches: id } }
+      );
     } else if (resource === 'categories') {
       deleted = await Category.findByIdAndDelete(id);
+    } else if (resource === 'groups') {
+      deleted = await Group.findByIdAndDelete(id);
+      await User.updateMany(
+        { groupId: id },
+        { $unset: { groupId: 1 } }
+      );
+    } else if (resource === 'users') {
+      deleted = await User.findByIdAndDelete(id);
     } else {
       return res.status(400).json({ error: 'Unknown resource type' });
     }
@@ -498,6 +873,16 @@ app.post('/api/admin/update', async (req, res) => {
       updated = await Branch.findByIdAndUpdate(id, payload, { new: true });
     } else if (resource === 'categories') {
       updated = await Category.findByIdAndUpdate(id, payload, { new: true });
+    } else if (resource === 'groups') {
+      updated = await Group.findByIdAndUpdate(id, payload, { new: true });
+    } else if (resource === 'users') {
+      // Hash password if provided
+      if (payload.password) {
+        const salt = await bcrypt.genSalt(10);
+        payload.password = await bcrypt.hash(payload.password, salt);
+      }
+      updated = await User.findByIdAndUpdate(id, payload, { new: true })
+        .populate('groupId', 'name permissions');
     } else {
       return res.status(400).json({ error: 'Unknown resource type' });
     }
@@ -556,6 +941,67 @@ async function seedDefaultData() {
       console.log('⏭️ Categories already exist, skipping category seeding');
     }
     
+    // Seed groups
+    const groupCount = await Group.estimatedDocumentCount();
+    console.log(`📊 Current group count: ${groupCount}`);
+    
+    if (groupCount === 0) {
+      console.log('👥 Seeding default groups...');
+      const defaultGroups = [
+        {
+          name: 'Admin',
+          description: 'System administrators with full access',
+          permissions: ['admin', 'dashboard', 'categories', 'sales', 'reports', 'branches', 'groups', 'users', 'settings'],
+          isDefault: true
+        },
+        {
+          name: 'Sales',
+          description: 'Sales staff with access to sales entry and reports',
+          permissions: ['dashboard', 'sales', 'reports'],
+          isDefault: true
+        },
+        {
+          name: 'Manager',
+          description: 'Branch managers with access to sales, reports and branches',
+          permissions: ['dashboard', 'sales', 'reports', 'branches'],
+          isDefault: true
+        }
+      ];
+      await Group.insertMany(defaultGroups);
+      console.log('✅ Seeded 3 default groups');
+    } else {
+      console.log('⏭️ Groups already exist, skipping group seeding');
+    }
+    
+    // Seed admin user
+    const userCount = await User.estimatedDocumentCount();
+    console.log(`📊 Current user count: ${userCount}`);
+    
+    if (userCount === 0) {
+      console.log('👤 Seeding default admin user...');
+      const adminGroup = await Group.findOne({ name: 'Admin' });
+      const allBranches = await Branch.find();
+      
+      if (adminGroup && allBranches.length > 0) {
+        const salt = await bcrypt.genSalt(10);
+        const hashedPassword = await bcrypt.hash('admin123', salt);
+        
+        const adminUser = new User({
+          username: 'admin',
+          fullName: 'System Administrator',
+          email: 'admin@dwatson.com',
+          password: hashedPassword,
+          groupId: adminGroup._id,
+          branches: allBranches.map(b => b._id)
+        });
+        
+        await adminUser.save();
+        console.log('✅ Seeded default admin user (username: admin, password: admin123)');
+      }
+    } else {
+      console.log('⏭️ Users already exist, skipping user seeding');
+    }
+    
     console.log('🎉 Database seeding completed!');
   } catch (error) {
     console.error('❌ Seed error:', error.message);
@@ -583,9 +1029,13 @@ mongoose.connection.once('open', () => {
     console.log('🎉 ==========================================');
     console.log('✅ All systems ready! API endpoints active.');
     console.log('🏥 Health check: GET /api/health');
+    console.log('🔐 Authentication: POST /api/auth/login');
     console.log('📋 Branches: GET /api/branches');
     console.log('🏷️ Categories: GET /api/categories');
+    console.log('👥 Groups: GET /api/groups');
+    console.log('👤 Users: GET /api/users');
     console.log('💰 Sales: GET /api/sales');
+    console.log('⚙️ Settings: GET /api/settings');
     console.log('🎉 ==========================================');
   });
 });
