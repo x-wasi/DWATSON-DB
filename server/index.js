@@ -227,97 +227,6 @@ app.get('/api/debug/user', authenticate, (req, res) => {
   });
 });
 
-// Fix admin endpoint - Simple fix for 403 errors
-app.post('/api/fix-admin', async (req, res) => {
-  try {
-    console.log('🔧 Fixing admin permissions...');
-    
-    // Find or create admin group with all permissions
-    let adminGroup = await Group.findOne({ name: 'Admin' });
-    
-    if (!adminGroup) {
-      adminGroup = new Group({
-        name: 'Admin',
-        description: 'System administrators with full access',
-        permissions: ['admin', 'dashboard', 'categories', 'sales', 'reports', 'branches', 'groups', 'users', 'settings'],
-        isDefault: true
-      });
-      await adminGroup.save();
-      console.log('✅ Created Admin group');
-    } else {
-      // Make sure it has all permissions
-      adminGroup.permissions = ['admin', 'dashboard', 'categories', 'sales', 'reports', 'branches', 'groups', 'users', 'settings'];
-      await adminGroup.save();
-      console.log('✅ Updated Admin group permissions');
-    }
-    
-    // Update admin user
-    const adminUser = await User.findOne({ username: 'admin' });
-    
-    if (adminUser) {
-      adminUser.groupId = adminGroup._id;
-      adminUser.isActive = true;
-      await adminUser.save();
-      console.log('✅ Updated admin user');
-      
-      res.json({ 
-        success: true, 
-        message: 'Admin fixed successfully! Please log out and log back in.',
-        permissions: adminGroup.permissions
-      });
-    } else {
-      res.status(404).json({ error: 'Admin user not found' });
-    }
-  } catch (error) {
-    console.error('❌ Fix failed:', error);
-    res.status(500).json({ error: error.message });
-  }
-});
-
-// Create new admin endpoint - Backup solution
-app.post('/api/create-new-admin', async (req, res) => {
-  try {
-    console.log('🔧 Creating new admin user...');
-    
-    // Find or create admin group
-    let adminGroup = await Group.findOne({ name: 'Admin' });
-    
-    if (!adminGroup) {
-      adminGroup = new Group({
-        name: 'Admin',
-        description: 'System administrators with full access',
-        permissions: ['admin', 'dashboard', 'categories', 'sales', 'reports', 'branches', 'groups', 'users', 'settings'],
-        isDefault: true
-      });
-      await adminGroup.save();
-    }
-    
-    // Create new admin user
-    const salt = await bcrypt.genSalt(10);
-    const hashedPassword = await bcrypt.hash('superadmin123', salt);
-    
-    const newAdmin = new User({
-      username: 'superadmin',
-      fullName: 'Super Administrator',
-      email: 'superadmin@dwatson.com',
-      password: hashedPassword,
-      groupId: adminGroup._id,
-      branches: [] // Will get all branches
-    });
-    
-    await newAdmin.save();
-    
-    res.json({ 
-      success: true, 
-      message: 'New admin user created',
-      username: 'superadmin',
-      password: 'superadmin123'
-    });
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
-});
-
 // Health endpoint
 app.get('/api/health', (req, res) => {
   const healthData = { 
@@ -418,105 +327,7 @@ app.get('/api/auth/me', authenticate, async (req, res) => {
     res.status(500).json({ error: 'Server error' });
   }
 });
-// Add this endpoint to create a fresh admin user
-app.post('/api/create-fresh-admin', async (req, res) => {
-  try {
-    console.log('Creating fresh admin user...');
-    
-    // Find or create admin group
-    let adminGroup = await Group.findOne({ name: 'Admin' });
-    
-    if (!adminGroup) {
-      adminGroup = new Group({
-        name: 'Admin',
-        description: 'System administrators with full access',
-        permissions: ['admin', 'dashboard', 'categories', 'sales', 'reports', 'branches', 'groups', 'users', 'settings'],
-        isDefault: true
-      });
-      await adminGroup.save();
-      console.log('Admin group created');
-    }
-    
-    // Delete existing admin users to avoid conflicts
-    await User.deleteMany({ username: { $in: ['admin', 'superadmin', 'myadmin'] } });
-    
-    // Create new admin user
-    const salt = await bcrypt.genSalt(10);
-    const hashedPassword = await bcrypt.hash('myadmin123', salt);
-    
-    const adminUser = new User({
-      username: 'myadmin',
-      fullName: 'My Administrator',
-      email: 'myadmin@dwatson.com',
-      password: hashedPassword,
-      groupId: adminGroup._id,
-      branches: []
-    });
-    
-    await adminUser.save();
-    console.log('Admin user created');
-    
-    res.json({ 
-      success: true, 
-      message: 'Fresh admin user created successfully',
-      username: 'myadmin',
-      password: 'myadmin123'
-    });
-  } catch (error) {
-    console.error('Error creating fresh admin:', error);
-    res.status(500).json({ error: error.message });
-  }
-});
-// Simple HTML page to trigger admin creation
-app.get('/create-admin-page', (req, res) => {
-  res.send(`
-    <!DOCTYPE html>
-    <html>
-    <head>
-      <title>Create Admin User</title>
-      <style>
-        body { font-family: Arial, sans-serif; margin: 20px; }
-        button { padding: 10px 15px; background: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer; }
-        #result { margin-top: 20px; padding: 10px; background: #f8f9fa; border-radius: 4px; }
-      </style>
-    </head>
-    <body>
-      <h1>Create Admin User</h1>
-      <button onclick="createAdmin()">Create Admin User</button>
-      <div id="result">Click the button to create an admin user</div>
-      
-      <script>
-        async function createAdmin() {
-          document.getElementById('result').innerHTML = 'Creating admin user...';
-          
-          try {
-            const response = await fetch('/api/create-fresh-admin', {
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/json'
-              }
-            });
-            
-            const data = await response.json();
-            
-            if (data.success) {
-              document.getElementById('result').innerHTML = 
-                '<h3>Success!</h3>' +
-                '<p>Username: <strong>' + data.username + '</strong></p>' +
-                '<p>Password: <strong>' + data.password + '</strong></p>' +
-                '<p>Go to the <a href="/">login page</a> and use these credentials.</p>';
-            } else {
-              document.getElementById('result').innerHTML = '<p style="color: red;">Error: ' + data.error + '</p>';
-            }
-          } catch (error) {
-            document.getElementById('result').innerHTML = '<p style="color: red;">Error: ' + error.message + '</p>';
-          }
-        }
-      </script>
-    </body>
-    </html>
-  `);
-});
+
 // Settings API
 app.get('/api/settings', authenticate, async (req, res) => {
   try {
@@ -1248,7 +1059,7 @@ async function seedDefaultData() {
         console.error('❌ Admin group not found after creation');
       }
     } else {
-      console.log('⏭️ Groups already exist, skipping group seeding');
+      console.log('⏭️ Groups already exist, checking admin group...');
       
       // Check if admin group exists and has correct permissions
       const adminGroup = await Group.findOne({ name: 'Admin' });
@@ -1314,7 +1125,7 @@ async function seedDefaultData() {
         console.error('❌ Admin user not found after creation');
       }
     } else {
-      console.log('⏭️ Users already exist, skipping user seeding');
+      console.log('⏭️ Users already exist, checking admin user...');
       
       // Check if admin user exists and has correct group
       const adminUser = await User.findOne({ username: 'admin' }).populate('groupId');
@@ -1369,8 +1180,6 @@ mongoose.connection.once('open', () => {
     console.log('💰 Sales: GET /api/sales');
     console.log('⚙️ Settings: GET /api/settings');
     console.log('🔍 Debug: GET /api/debug/user');
-    console.log('🔧 Fix Admin: POST /api/fix-admin');
-    console.log('🆕 Create New Admin: POST /api/create-new-admin');
     console.log('🎉 ==========================================');
   });
 });
@@ -1390,5 +1199,3 @@ app.use('*', (req, res) => {
     res.sendFile(path.join(clientDir, 'index.html'));
   }
 });
-
-
